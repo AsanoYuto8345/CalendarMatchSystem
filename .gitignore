@@ -1,0 +1,67 @@
+# ────────────────────────────────────────────────────────────
+#  プロジェクト全体の .gitignore（ルートに配置）
+# ────────────────────────────────────────────────────────────
+
+# === Logs ===
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+# === Node (frontend) ===
+# Create React App で生成されるディレクトリやファイルを無視
+node_modules/
+build/
+dist/
+*.local
+*.cache
+# React の一時ファイル
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+package-lock.json
+yarn.lock
+
+# === Python (backend) ===
+# Flask + SQLite 周り
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.sqlite3
+# SQLite データベースファイル（例：messages.db）
+*.db
+# 仮に venv や .venv を使っている場合
+.venv/
+venv/
+env/
+ENV/
+# Python の依存情報
+pip-log.txt
+pip-delete-this-directory.txt
+# Flask の設定ファイル（もし .env などを使う場合）
+.env
+
+# === VSCode / IDE ===
+.vscode/
+!.vscode/extensions.json   # チーム共通の拡張設定だけコミット
+.idea/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# === macOS/Windows OS 一般 ===
+.DS_Store
+Thumbs.db
+
+# === その他ビルド成果物 / キャッシュ ===
+# もし TypeScript を使っていれば
+dist/
+build/
+# ESBuild/Rollup/Vite がキャッシュとして作るフォルダ（念のため）
+.cache/
+# そのほか、キャッシュや一時生成ファイルを追加してください
