@@ -74,20 +74,9 @@ cd CalendarMatchSystem
    pip install --upgrade pip
    pip install --no-cache-dir -r requirements.txt
    ```
-   - `requirements.txt` には以下のような内容が記載されています：
-     ```
-     Flask==2.2.5
-     Flask-Cors==3.0.10
-     Flask-SQLAlchemy==3.0.5
-     gunicorn==20.1.0      # （本番用、開発中は不要でも可）
-     ```
 
 3. **サーバーを起動（開発モード）**  
-   - `app.py` 内で `debug=True` が指定されています：
-     ```python
-     if __name__ == "__main__":
-         app.run(host="0.0.0.0", port=5000, debug=True)
-     ```
+
    - ターミナルで：
      ```bash
      python app.py
@@ -119,26 +108,6 @@ cd CalendarMatchSystem
    ```bash
    npm install
    ```
-   - `package.json` には以下のような内容が記載されています：
-     ```jsonc
-     {
-       "name": "frontend",
-       "version": "0.1.0",
-       "private": true,
-       "dependencies": {
-         "react": "^19.1.0",
-         "react-dom": "^19.1.0",
-         "react-scripts": "5.0.1",
-         "web-vitals": "^2.1.4"
-       },
-       "scripts": {
-         "start": "react-scripts start",
-         "build": "react-scripts build",
-         "test": "react-scripts test",
-         "eject": "react-scripts eject"
-       }
-     }
-     ```
 
 3. **開発サーバーを起動（ホットリロード有効）**  
    ```bash
