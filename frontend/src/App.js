@@ -1,26 +1,30 @@
 // frontend/src/App.js
-import React, { useEffect, useState } from "react";
+import React from "react";
+import { BrowserRouter, Routes, Route } from "react-router-dom";
 
-function App() {
-  const [messages, setMessages] = useState([]);
+import Header from "./components/Header";
+import CommunityLeave from "./components/CommunityLeave";
+import Home from "./pages/Home";
 
-  useEffect(() => {
-    fetch("http://localhost:5001/api/messages")
-      .then((res) => res.json())
-      .then((data) => setMessages(data))
-      .catch((err) => console.error(err));
-  }, []);
+// 今後、別ページを追加したい場合はここにインポートして
+// import About from "./pages/About";
 
+export default function App() {
   return (
-    <div style={{ padding: 20 }}>
-      <h1>Flask + React + SQLite のcalenderアプリサンル</h1>
-      <ul>
-        {messages.map((m) => (
-          <li key={m.id}>{m.text}</li>
-        ))}
-      </ul>
-    </div>
+    <BrowserRouter>
+      <Header />
+
+      <Routes>
+        {/* ホーム画面 (メッセージ一覧) */}
+        <Route path="/" element={<Home />} />
+
+        {/* 例：他のページを追加する場合
+        <Route path="/about" element={<About />} />
+        */}
+        <Route path="/community/leave" element={<CommunityLeave />} />
+        {/* どのパスにもマッチしない場合は Home に飛ばす */}
+        <Route path="*" element={<Home />} />
+      </Routes>
+    </BrowserRouter>
   );
 }
-
-export default App;
