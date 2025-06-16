@@ -24,7 +24,7 @@ class Notification:
         
     def send_match_message(self, user_ids, message):
         """
-        指定されたユーザに指定されたメッセージをLINEMessagingAPIにより通知する
+        M2通知送信に対応。指定されたユーザに指定されたメッセージをLINEMessagingAPIにより通知する
         
         Args:
             user_ids (list[str]): メッセージを通知するユーザのLINE IDのリスト
@@ -43,5 +43,3 @@ class Notification:
         except LineBotApiError as e:
             print(f"LINE送信エラー: {e}")
             return False
-    
-    
