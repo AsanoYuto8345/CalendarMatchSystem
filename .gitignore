@@ -31,6 +31,7 @@ __pycache__/
 *.pyo
 *.pyd
 *.sqlite3
+test
 # SQLite データベースファイル（例：messages.db）
 *.db
 # 仮に venv や .venv を使っている場合

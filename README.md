@@ -20,7 +20,8 @@
 6. ファイル変更の反映方法  
 7. よくあるトラブルシュート  
 8. プロジェクト構成・ファイル説明  
-9. ライセンス  
+9. Gitフック (`post-merge`) の利用  
+10. ライセンス  
 
 ---
 
@@ -281,6 +282,39 @@ calendar-app/
 
 - **.gitignore**  
   - `backend/__pycache__/` や `*.db`、`frontend/node_modules/`、キャッシュファイルなどを除外する設定が書かれています。  
+
+## Gitフック (`post-merge`) の利用
+
+複数人開発で便利な Git の自動化機能として、`git pull` の後に依存パッケージのインストールを自動化する方法があります。
+
+### 設定手順
+
+1. `.git/hooks/` ディレクトリに移動し、`post-merge` というファイルを作成します：
+
+```bash
+cd .git/hooks
+touch post-merge
+chmod +x post-merge
+```
+
+2. 以下のようにスクリプトを記述します：
+
+```bash
+#!/bin/bash
+
+echo "🔄 frontend npm install 実行中..."
+cd frontend
+[ -f package.json ] && npm install
+
+echo "🔄 backend requirements.txt 実行中..."
+cd ../backend
+[ -f requirements.txt ] && pip install -r requirements.txt
+
+echo "✅ 自動セットアップ完了"
+```
+
+> ⚠ `.git/hooks/` 以下は Git によって共有されないため、チームメンバー各自でこのスクリプトを作成・設置する必要があります。
+> 共有したい場合は、`scripts/setup.sh` のように共通スクリプト化して管理することもおすすめです。
 
 ---
 

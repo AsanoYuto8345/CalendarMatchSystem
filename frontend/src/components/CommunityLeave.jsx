@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import { useState } from "react";
 const CommunityLeave = () => {
   // 変数とか処理ロジックとか
   const [isAccepted, setIsAccepted] = useState(false);
