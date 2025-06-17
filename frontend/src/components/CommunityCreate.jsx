@@ -1,6 +1,8 @@
+// src/components/CommunityCreate.jsx
+
 /**
- * コミュニティ作成画面
- * 作成者: 遠藤　信輝
+ * コミュニティ作成画面 UIコンポーネント
+ * 作成者: 遠藤 信輝
  */
 
 import React, { useState } from 'react';
@@ -17,20 +19,14 @@ function CommunityCreate() {
   const [loading, setLoading] = useState(false);
   const [showSuccessModal, setShowSuccessModal] = useState(false);
 
-  /** 
-   * 選択された画像ファイルの処理とプレビュー表示
-   */
+  // 選択された画像ファイルの処理とプレビュー表示
   const handleImageChange = (e) => {
     const file = e.target.files[0];
     setImage(file);
-    if (file) {
-      setPreview(URL.createObjectURL(file));
-    }
+    if (file) setPreview(URL.createObjectURL(file));
   };
 
-  /**
-   * コミュニティ作成のフォーム送信処理
-   */
+  // コミュニティ作成のフォーム送信処理
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
@@ -41,7 +37,6 @@ function CommunityCreate() {
       setLoading(false);
       return;
     }
-
     if (communityName.length > 16) {
       setMessage('コミュニティ名は16文字以内で入力してください');
       setLoading(false);
@@ -51,27 +46,24 @@ function CommunityCreate() {
     try {
       const formData = new FormData();
       formData.append('community_name', communityName);
-      if (image) {
-        formData.append('image', image);
-      }
+      if (image) formData.append('image', image);
 
       const response = await fetch('http://localhost:5001/community/create', {
         method: 'POST',
         body: formData
       });
 
-      const responseText = await response.text();
+      const text = await response.text();
       let data;
-      try {
-        data = JSON.parse(responseText);
-      } catch {
+      try { data = JSON.parse(text); } catch {
         setMessage(`サーバーエラー: レスポンスがJSONではありません (${response.status})`);
         return;
       }
 
       if (response.ok) {
         setShowSuccessModal(true);
-        setMessage(data.message || '作成に成功しました！');
+        const name = data.community_name || communityName;
+        setMessage(`コミュニティ「${name}」を作成しました！`);
         setCommunityName('');
         setImage(null);
         setPreview('');
@@ -80,94 +72,45 @@ function CommunityCreate() {
       } else {
         setMessage(data.error || `エラーが発生しました (${response.status})`);
       }
-    } catch (error) {
-      setMessage(`送信エラー: ${error.message}`);
+    } catch (err) {
+      setMessage(`送信エラー: ${err.message}`);
     }
 
     setLoading(false);
   };
 
   return (
-    <div style={{ padding: '20px', maxWidth: '500px' }}>
+    <div className="p-5 max-w-xl mx-auto">
       {showSuccessModal && (
-        <div
-          style={{
-            position: 'fixed',
-            top: '0',
-            left: '0',
-            width: '100vw',
-            height: '100vh',
-            backgroundColor: 'rgba(0,0,0,0.5)',
-            display: 'flex',
-            justifyContent: 'center',
-            alignItems: 'center',
-            zIndex: '1000'
-          }}
-        >
-          <div
-            style={{
-              backgroundColor: 'white',
-              padding: '30px 40px',
-              borderRadius: '8px',
-              position: 'relative',
-              minWidth: '300px',
-              textAlign: 'center',
-              boxShadow: '0 4px 12px rgba(0,0,0,0.2)'
-            }}
-          >
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white p-8 rounded-lg relative min-w-[300px] text-center shadow-lg">
             <button
               onClick={() => setShowSuccessModal(false)}
-              style={{
-                position: 'absolute',
-                top: '10px',
-                right: '10px',
-                background: 'transparent',
-                border: 'none',
-                fontSize: '20px',
-                cursor: 'pointer'
-              }}
-            >
-              ×
-            </button>
-            <h3 style={{ marginTop: '20px', fontSize: '20px' }}>作成完了</h3>
+              className="absolute top-2 right-2 text-xl text-gray-500 hover:text-black"
+            >×</button>
+            <h3 className="mt-4 text-lg font-semibold">作成完了</h3>
           </div>
         </div>
       )}
 
-      <h2>コミュニティ作成</h2>
+      <h2 className="text-xl font-bold mb-4">コミュニティ作成</h2>
 
       <form onSubmit={handleSubmit}>
-        <div style={{ marginBottom: '15px' }}>
-          <label style={{ display: 'block', marginBottom: '5px' }}>
-            コミュニティ名：
-          </label>
+        <div className="mb-4">
+          <label className="block mb-1 font-medium">コミュニティ名：</label>
           <input
             type="text"
             value={communityName}
             onChange={(e) => setCommunityName(e.target.value)}
             maxLength={16}
             required
-            style={{
-              width: '100%',
-              padding: '8px',
-              border: '1px solid #ddd',
-              borderRadius: '4px'
-            }}
+            className="w-full p-2 border border-gray-300 rounded"
           />
-          <small style={{ color: '#666' }}>
-            {communityName.length}/16文字
-          </small>
+          <small className="text-gray-500">{communityName.length}/16文字</small>
         </div>
 
-        <div style={{ marginBottom: '15px' }}>
-          <label
-            htmlFor="image-upload"
-            style={{
-              cursor: 'pointer',
-              color: '#007bff',
-              textDecoration: 'underline'
-            }}
-          >
+        <div className="mb-4">
+          <label htmlFor="image-upload" className="cursor-pointer text-blue-600 underline">
             📷 画像を選ぶ（任意）
           </label>
           <input
@@ -175,70 +118,26 @@ function CommunityCreate() {
             type="file"
             accept="image/*"
             onChange={handleImageChange}
-            style={{ display: 'none' }}
+            className="hidden"
           />
-          {image && (
-            <div style={{ marginTop: '8px', fontSize: '14px', color: '#666' }}>
-              選択された画像: {image.name} ({Math.round(image.size / 1024)}KB)
-            </div>
-          )}
+          {image && <div className="mt-2 text-sm text-gray-600">選択された画像: {image.name} ({Math.round(image.size/1024)}KB)</div>}
         </div>
 
         {preview && (
-          <div style={{ marginBottom: '15px' }}>
-            <img
-              src={preview}
-              alt="preview"
-              style={{
-                width: '100px',
-                height: '100px',
-                objectFit: 'cover',
-                border: '1px solid #ddd',
-                borderRadius: '4px'
-              }}
-            />
+          <div className="mb-4">
+            <img src={preview} alt="preview" className="w-24 h-24 object-cover border border-gray-300 rounded" />
           </div>
         )}
 
         <button
           type="submit"
           disabled={loading}
-          style={{
-            padding: '10px 20px',
-            backgroundColor: loading ? '#6c757d' : '#007bff',
-            color: 'white',
-            border: 'none',
-            borderRadius: '4px',
-            cursor: loading ? 'not-allowed' : 'pointer',
-            width: '100%'
-          }}
-        >
-          {loading ? '作成中...' : '作成'}
-        </button>
+          className={`w-full py-2 px-4 rounded text-white ${loading ? 'bg-gray-500 cursor-not-allowed' : 'bg-blue-600 hover:bg-blue-700'}`}
+        >{loading ? '作成中...' : '作成'}</button>
       </form>
 
       {message && (
-        <div
-          style={{
-            marginTop: '15px',
-            padding: '10px',
-            backgroundColor:
-              message.includes('エラー') || message.includes('失敗')
-                ? '#f8d7da'
-                : '#d4edda',
-            color:
-              message.includes('エラー') || message.includes('失敗')
-                ? '#721c24'
-                : '#155724',
-            border: `1px solid ${
-              message.includes('エラー') || message.includes('失敗')
-                ? '#f5c6cb'
-                : '#c3e6cb'
-            }`,
-            borderRadius: '4px',
-            fontSize: '14px'
-          }}
-        >
+        <div className={`mt-4 p-3 rounded text-sm border ${message.includes('エラー')||message.includes('失敗') ? 'bg-red-100 text-red-800 border-red-300' : 'bg-green-100 text-green-800 border-green-300'}`}>
           {message}
         </div>
       )}
