@@ -1,5 +1,7 @@
+// src/components/CommunityJoin.jsx
+
 /**
- * M3 コミュニティ参加画面
+ * コミュニティ参加画面 UIコンポーネント
  * 作成者: 遠藤　信輝
  */
 
@@ -8,151 +10,75 @@ import { FaCamera } from 'react-icons/fa';
 import axios from 'axios';
 
 /**
- * CommunityJoin
+ * CommunityJoin コンポーネント
  * ユーザがコミュニティ名を入力し参加する画面
  */
 function CommunityJoin() {
-  const [communityId, setCommunityId] = useState('');
-  const [showSuccessModal, setShowSuccessModal] = useState(false);
+    const [communityId, setCommunityId] = useState('');
+    const [showSuccessModal, setShowSuccessModal] = useState(false);
 
-  /**
-   * コミュニティ参加リクエスト送信
-   */
-  const handleJoin = async (e) => {
+  // コミュニティ参加リクエスト送信
+    const handleJoin = async (e) => {
     e.preventDefault();
-
     try {
-      await axios.post('http://localhost:5001/community/join', {
+        await axios.post('http://localhost:5001/community/join', {
         community_name: communityId
-      });
-
-      setShowSuccessModal(true);
+        });
+        setShowSuccessModal(true);
     } catch (error) {
-      alert(
+        alert(
         error.response?.data?.error ||
         error.response?.data?.message ||
         error.message ||
         'サーバエラーが発生しました'
-      );
+        );
     }
-  };
+    };
 
-  return (
-    <div
-      style={{
-        display: 'flex',
-        justifyContent: 'center',
-        alignItems: 'center',
-        height: '100vh',
-        backgroundColor: '#f8f8f8'
-      }}
-    >
-      {/* 成功モーダル */}
-      {showSuccessModal && (
-        <div
-          style={{
-            position: 'fixed',
-            top: '0',
-            left: '0',
-            width: '100vw',
-            height: '100vh',
-            backgroundColor: 'rgba(0,0,0,0.5)',
-            display: 'flex',
-            justifyContent: 'center',
-            alignItems: 'center',
-            zIndex: '1000'
-          }}
-        >
-          <div
-            style={{
-              backgroundColor: 'white',
-              padding: '30px 40px',
-              borderRadius: '8px',
-              position: 'relative',
-              minWidth: '300px',
-              textAlign: 'center',
-              boxShadow: '0 4px 12px rgba(0,0,0,0.2)'
-            }}
-          >
+    return (
+    <div className="min-h-screen flex items-center justify-center bg-gray-100 p-5">
+        {showSuccessModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div className="bg-white p-8 rounded-lg relative min-w-[300px] text-center shadow-lg">
             <button
-              onClick={() => setShowSuccessModal(false)}
-              style={{
-                position: 'absolute',
-                top: '10px',
-                right: '10px',
-                background: 'transparent',
-                border: 'none',
-                fontSize: '20px',
-                cursor: 'pointer'
-              }}
+                onClick={() => setShowSuccessModal(false)}
+                className="absolute top-2 right-2 text-xl text-gray-500 hover:text-black"
             >
-              ×
+                ×
             </button>
-            <h3 style={{ marginTop: '20px', fontSize: '20px' }}>参加完了</h3>
-          </div>
+            <h3 className="mt-4 text-lg font-semibold">参加完了</h3>
+            </div>
         </div>
-      )}
+        )}
 
-      <form
+        <form
         onSubmit={handleJoin}
-        style={{
-          backgroundColor: 'white',
-          padding: '40px',
-          borderRadius: '8px',
-          boxShadow: '0 0 10px rgba(0,0,0,0.1)',
-          width: '320px',
-          textAlign: 'center'
-        }}
-      >
-        <h2 style={{ marginBottom: '30px' }}>コミュニティ参加</h2>
-
-        <div
-          style={{
-            width: '80px',
-            height: '80px',
-            borderRadius: '50%',
-            border: '2px solid #ccc',
-            display: 'flex',
-            justifyContent: 'center',
-            alignItems: 'center',
-            margin: '0 auto 30px'
-          }}
+        className="bg-white p-8 rounded-lg shadow-md w-full max-w-md text-center"
         >
-          <FaCamera size={28} color="#888" />
+        <h2 className="text-2xl font-bold mb-6">コミュニティ参加</h2>
+
+        <div className="w-20 h-20 rounded-full border-2 border-gray-300 flex items-center justify-center mx-auto mb-6 text-gray-500">
+            <FaCamera size={28} />
         </div>
 
         <input
-          type="text"
-          placeholder="コミュニティ名"
-          value={communityId}
-          onChange={(e) => setCommunityId(e.target.value)}
-          required
-          style={{
-            width: '100%',
-            padding: '10px',
-            marginBottom: '20px',
-            border: '1px solid #ccc',
-            borderRadius: '4px'
-          }}
+            type="text"
+            placeholder="コミュニティ名"
+            value={communityId}
+            onChange={(e) => setCommunityId(e.target.value)}
+            required
+            className="w-full p-2 mb-5 border border-gray-300 rounded"
         />
 
         <button
-          type="submit"
-          style={{
-            padding: '10px 20px',
-            backgroundColor: '#007bff',
-            color: 'white',
-            border: 'none',
-            borderRadius: '4px',
-            width: '100%',
-            cursor: 'pointer'
-          }}
+            type="submit"
+            className="w-full py-2 px-4 bg-blue-600 hover:bg-blue-700 text-white rounded"
         >
-          参加する
+            参加する
         </button>
-      </form>
+        </form>
     </div>
-  );
+    );
 }
 
 export default CommunityJoin;
