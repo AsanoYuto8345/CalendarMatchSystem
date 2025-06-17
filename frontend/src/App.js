@@ -15,7 +15,7 @@ export default function App() {
       <Routes>
         {/* ホーム画面 (メッセージ一覧) */}
         <Route path="/" element={<Home />} />
-
+        
         {/* 各機能用のルーティング */}
         {AuthRoutes}
         {UserRoutes}
