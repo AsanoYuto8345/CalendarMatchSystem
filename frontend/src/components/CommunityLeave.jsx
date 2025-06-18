@@ -1,10 +1,6 @@
 // W7 コミュニティ脱退画面に対応するReactコンポーネント 担当者: 浅野勇翔 
 
-import { useState } from "react";
-
-const CommunityLeave = ({ communityName = "未設定" }) => {
-  const [isAccepted, setIsAccepted] = useState(false);
-
+const CommunityLeave = ({ communityName = "未設定", onAcceptClick, onRejectClick, msg }) => {
   return (
     <div className="max-w-md mx-auto mt-16 p-6 bg-white shadow-lg rounded-lg">
       {/* タイトル */}
@@ -21,17 +17,20 @@ const CommunityLeave = ({ communityName = "未設定" }) => {
       <div className="flex justify-center space-x-4 mb-6">
         <button
           className="px-6 py-2 bg-red-500 hover:bg-red-600 text-white rounded"
-          onClick={() => setIsAccepted(true)}
+          onClick={onAcceptClick}
         >
           はい
         </button>
         <button
           className="px-6 py-2 bg-gray-300 hover:bg-gray-400 text-gray-800 rounded"
-          onClick={() => setIsAccepted(false)}
+          onClick={onRejectClick}
         >
           いいえ
         </button>
       </div>
+
+      {/* 処理メッセージ */}
+      <div>{msg}</div>
     </div>
   );
 };
