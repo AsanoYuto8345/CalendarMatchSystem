@@ -38,3 +38,8 @@ def get_messages():
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5001)
+
+# 仮置きのCalendarLeaveの動作確認ができるようになるためのルート
+@app.route("/api/community/<communityId>")
+def get_community_name():
+    return jsonify({"community_name": "仮コミュニティ名"})
