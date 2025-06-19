@@ -1,75 +1,41 @@
 /**
- * ハンバーガーメニュー表示・ユーザー操作メニュー表示
+ * ハンバーガーコンポーネント
+ * ナビゲーション用のリンク一覧を表示
  * 作成者: 石田めぐみ
  */
 
-import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom'
 
 const SideMenu = () => {
-  const navigate = useNavigate();
-  const [menuVisible, setMenuVisible] = useState(false);
-  const [profileMenuVisible, setProfileMenuVisible] = useState(false);
+  const location = useLocation()
 
-  const handleNavigate = (path) => {
-    navigate(path);
-    setMenuVisible(false);
-    setProfileMenuVisible(false);
-  };
+  const menuItems = [
+    { label: 'マイページ', path: '/mypage' },
+    { label: 'カレンダー', path: '/calendar' },
+    { label: 'コミュニティ', path: '/community' },
+    { label: 'ログアウト', path: '/auth/logout' }
+  ]
 
   return (
-    <div className="relative">
-      {/* ハンバーガーボタン */}
-      <button
-        className="text-3xl p-2"
-        onClick={() => setMenuVisible(!menuVisible)}
-      >
-        ☰
-      </button>
+    <aside className="w-64 h-screen bg-gray-100 p-4 shadow-md">
+      <h2 className="text-xl font-bold mb-6">メニュー</h2>
+      <nav className="flex flex-col space-y-3">
+        {menuItems.map((item) => (
+          <Link
+            key={item.path}
+            to={item.path}
+            className={`px-4 py-2 rounded hover:bg-blue-100 ${
+              location.pathname.startsWith(item.path)
+                ? 'bg-blue-200 font-semibold'
+                : ''
+            }`}
+          >
+            {item.label}
+          </Link>
+        ))}
+      </nav>
+    </aside>
+  )
+}
 
-      {/* メニュー表示 */}
-      {menuVisible && (
-        <div className="absolute top-12 left-0 flex bg-white shadow-lg rounded-xl z-50">
-          {/* メインメニュー */}
-          <div className="p-4 space-y-3 border-r border-gray-200">
-            <button className="block text-left" onClick={() => handleNavigate('/w2')}>カレンダー</button>
-            <button className="block text-left" onClick={() => handleNavigate('/w18')}>メンバー</button>
-            <button className="block text-left" onClick={() => handleNavigate('/w10')}>テンプレートタグ一覧</button>
-          </div>
-
-          {/* 左側のアイコンメニュー */}
-          <div className="flex flex-col items-center bg-gray-100 w-16 py-4 space-y-4 rounded-r-xl">
-            <button className="w-8 h-8 bg-gray-300 rounded-full" onClick={() => handleNavigate('/w2')} />
-            <button className="w-8 h-8 bg-gray-300 rounded-full" onClick={() => handleNavigate('/w2')} />
-            <button className="w-8 h-8 bg-gray-300 rounded-full" onClick={() => handleNavigate('/w2')} />
-            <button className="w-8 h-8 bg-gray-300 rounded-full text-xl font-bold" onClick={() => handleNavigate('/w4')}>
-              ＋
-            </button>
-
-            {/* プロフィールメニュー */}
-            <div className="relative">
-              <button
-                className="w-8 h-8 bg-gray-500 rounded-full text-white"
-                onClick={() => setProfileMenuVisible(!profileMenuVisible)}
-              >
-                👤
-              </button>
-              {profileMenuVisible && (
-                <div className="absolute top-full right-0 mt-2 w-40 bg-white border border-gray-300 rounded-xl shadow-lg p-3 space-y-2 z-50">
-                  <button className="block w-full text-left" onClick={() => handleNavigate('/w19')}>
-                    ユーザ情報編集
-                  </button>
-                  <button className="block w-full text-left" onClick={() => handleNavigate('/w17')}>
-                    ログアウト
-                  </button>
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
-      )}
-    </div>
-  );
-};
-
-export default SideMenu;
+export default SideMenu
