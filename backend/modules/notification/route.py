@@ -1,9 +1,9 @@
 # C7通知処理部のM1通知送信主処理を担当するプログラム　担当: 浅野勇翔
 
 from flask import Blueprint, request, jsonify
-from notification import Notification
+from .notification import Notification
 
-notification_bp = Blueprint('notification', __name__, url_prefix='/api/norification')
+notification_bp = Blueprint('notification', __name__, url_prefix='/api/notification')
 
 @notification_bp.route('/notify', methods=['POST'])
 def send_notify():
