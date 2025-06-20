@@ -12,18 +12,12 @@ import { useState } from "react";
  * Props:
  *  - tagName (string): 初期タグ名（省略時は空文字）
  *  - colorCode (string): 初期カラーコード（6桁の16進数, 省略時は "000000"）
+ *  - onSubmit (function): 完了ボタンを押したときに行われる処理を記述した関数
  */
-const TemplateTagEdit = ({ tagName = "", colorCode = "000000" }) => {
+const TemplateTagEdit = ({ tagName = "", colorCode = "000000", onSubmit }) => {
   const [tag, setTag] = useState(tagName);
   const [color, setColor] = useState(colorCode);
 
-  /**
-   * 完了ボタン押下時の処理
-   * - 入力されたタグ名とカラーコードをアラート表示（将来的にはAPI送信）
-   */
-  const onSubmit = () => {
-    alert(`タグ名: ${tag}, カラーコード: ${color}`);
-  };
 
   // 表示用のカラーコード。#がなければ補う。
   const displayColor = color.startsWith("#") ? color : `#${color}`;
@@ -70,7 +64,9 @@ const TemplateTagEdit = ({ tagName = "", colorCode = "000000" }) => {
       <div className="text-center">
         <button
           className="bg-white border px-6 py-2 rounded shadow hover:bg-gray-100"
-          onClick={onSubmit}
+          onClick={() => {
+            onSubmit(tagName, color);
+          }}
         >
           完了
         </button>
