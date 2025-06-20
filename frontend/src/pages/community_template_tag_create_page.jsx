@@ -1,15 +1,15 @@
-// M16 テンプレートタグ編集画面 担当者: 浅野勇翔
+// M16 テンプレートタグ編集画面(新規登録ver) 担当者: 浅野勇翔
 
 import axios from "axios";
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 
 import TemplateTagEdit from "../components/TemplateTagEdit";
 
 /**
- * テンプレートタグ編集ページ
- * - URL パラメータ communityId, tagId を受け取って API から既存のタグ情報を取得
- * - 取得した情報を <TemplateTagEdit> に渡して編集画面を構築
+ * テンプレートタグ編集ページ(新規登録時)
+ * - URL パラメータ communityId,を受け取って API から既存のタグ情報を取得
+ *
  * 
  * 作成者: 浅野勇翔
  */
