@@ -10,7 +10,7 @@ import { useNavigate } from 'react-router-dom';
 import SignUpUI from '../components/SignupUI';
 
 /**
- * auth_signup_page
+ * auth_sign_up_page
  * - サインアップフォーム表示
  * - 入力情報をC1（ユーザ作成API）へ送信
  * - 結果メッセージを表示
