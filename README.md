@@ -1,3 +1,41 @@
+#単体テスト(フロントエンド)
+```bash
+npm install --save-dev @testing-library/jest-dom @testing-library/react @testing-library/user-event
+```
+```bash
+npm install react-router-dom
+```
+これができたらセットアップ完了
+componentsディレクトリに
+(テストしたいファイル名).test.jsxを作成
+イメージ
+```
+.
+├── CommunityLeave.jsx
+├── LoginUI.jsx
+├── LogoutUI.jsx
+├── SignupUI.jsx
+└── SignupUI.test.jsx
+```
+SignupUI.test.jsxの中身はcomponentsとpagesの該当ファイル投げてAIに作らせればいい
+できたら
+```bash
+npm test     
+```
+する。
+FAILなら
+出てきた結果をAIに投げて修正
+PASSなら
+完成
+こんな感じになる
+```
+ PASS  src/components/SignupUI.test.jsx
+```
+もしかしたら出てくるこいつ、多分こっちは無視していい
+```
+ FAIL  src/App.test.js
+```
+
 # カレンダーアプリケーション (Calendar App)
 
 このリポジトリは、**Flask + SQLite** をバックエンドに、**React (Create React App)** をフロントエンドに用いた簡易カレンダーアプリケーションです。  
