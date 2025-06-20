@@ -10,11 +10,12 @@ describe('SignupUI', () => {
   // --- 要素の表示確認テスト ---
 
   test('「サインアップ」タイトルと各入力フィールド、ボタンが正しく表示されること', () => {
-    // コンポーネントをレンダリング（onSubmitClick と msg はダミー関数/空文字列でOK）
     render(<SignupUI onSubmitClick={() => {}} msg="" />);
 
     // タイトルが表示されていることを確認
-    expect(screen.getByText('サインアップ')).toBeInTheDocument();
+    // 変更前: expect(screen.getByText('サインアップ')).toBeInTheDocument();
+    // 変更後: getByRoleで「heading」かつ名前が「サインアップ」の要素を探す
+    expect(screen.getByRole('heading', { name: /サインアップ/i, level: 2 })).toBeInTheDocument();
 
     // 各ラベルと入力フィールドが表示されていることを確認
     expect(screen.getByLabelText('メールアドレス')).toBeInTheDocument();
@@ -27,9 +28,10 @@ describe('SignupUI', () => {
     expect(screen.getByPlaceholderText('表示名')).toBeInTheDocument();
 
     expect(screen.getByLabelText('アイコン画像')).toBeInTheDocument();
-    expect(screen.getByText('画像ファイルを選択してください')).toBeInTheDocument(); // smallタグのテキスト
+    expect(screen.getByText('画像ファイルを選択してください')).toBeInTheDocument();
 
-    // サインアップボタンが表示されていることを確認 (getByRole 'button' を使うのがより頑健)
+    // サインアップボタンが表示されていることを確認 (getByRole 'button' を使うのはすでに良い)
+    // ここは変更なしでOK
     expect(screen.getByRole('button', { name: /サインアップ/i })).toBeInTheDocument();
   });
 
