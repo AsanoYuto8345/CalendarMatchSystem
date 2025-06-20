@@ -1,7 +1,10 @@
 // CalendarMatchSystem/frontend/jest.config.js
 module.exports = {
   // テストの実行環境をブラウザライクなDOM環境に設定
-  testEnvironment: 'jsdom',
+  // 変更前: testEnvironment: 'jsdom',
+  // 変更後:
+  testEnvironment: 'jest-environment-jsdom', // ここをこのように変更
+
 
   // 各テストファイル実行前にロードするセットアップファイル
   // setupTests.js が src/ ディレクトリ直下にあるので、そのパスを指定します。
