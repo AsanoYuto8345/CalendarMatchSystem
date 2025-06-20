@@ -19,10 +19,12 @@ const SignupUI = ({ onSubmitClick, msg }) => {
       <h2 className="text-2xl font-bold text-center mb-4">サインアップ</h2>
 
       <div className="mb-4">
-        <label className="block text-sm font-medium mb-1">メールアドレス</label>
+        {/* メールアドレスの修正: htmlForとidを追加 */}
+        <label htmlFor="email" className="block text-sm font-medium mb-1">メールアドレス</label>
         <input
           type="email"
           name="email"
+          id="email" // ★ここを追加
           className="w-full px-3 py-2 border border-gray-300 rounded"
           placeholder="example@example.com"
         />
@@ -30,10 +32,12 @@ const SignupUI = ({ onSubmitClick, msg }) => {
       </div>
 
       <div className="mb-4">
-        <label className="block text-sm font-medium mb-1">パスワード</label>
+        {/* パスワードの修正: htmlForとidを追加 */}
+        <label htmlFor="password" className="block text-sm font-medium mb-1">パスワード</label>
         <input
           type="password"
           name="password"
+          id="password" // ★ここを追加
           className="w-full px-3 py-2 border border-gray-300 rounded"
           placeholder="パスワード"
         />
@@ -41,10 +45,12 @@ const SignupUI = ({ onSubmitClick, msg }) => {
       </div>
 
       <div className="mb-4">
-        <label className="block text-sm font-medium mb-1">表示名</label>
+        {/* 表示名の修正: htmlForとidを追加 */}
+        <label htmlFor="displayName" className="block text-sm font-medium mb-1">表示名</label>
         <input
           type="text"
           name="display_name"
+          id="displayName" // ★ここを追加
           className="w-full px-3 py-2 border border-gray-300 rounded"
           placeholder="表示名"
         />
@@ -52,10 +58,12 @@ const SignupUI = ({ onSubmitClick, msg }) => {
       </div>
 
       <div className="mb-6">
-        <label className="block text-sm font-medium mb-1">アイコン画像</label>
+        {/* アイコン画像の修正: htmlForとidを追加 */}
+        <label htmlFor="iconFile" className="block text-sm font-medium mb-1">アイコン画像</label>
         <input
           type="file"
           name="icon_file"
+          id="iconFile" // ★ここを追加
           accept="image/*"
           className="block w-full"
         />
