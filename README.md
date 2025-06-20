@@ -1,6 +1,6 @@
 #単体テスト(フロントエンド)
 ```bash
-npm install --save-dev vitest @testing-library/react @testing-library/jest-dom jsdom
+npm install --save-dev @testing-library/jest-dom @testing-library/react @testing-library/user-event
 ```
 ```bash
 npm install react-router-dom
