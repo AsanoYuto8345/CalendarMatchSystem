@@ -4,7 +4,10 @@ module.exports = {
   // 変更前: testEnvironment: 'jsdom',
   // 変更後:
   testEnvironment: 'jest-environment-jsdom', // ここをこのように変更
-
+  // ★この行を新たに追加
+  testEnvironmentOptions: {
+    customExportConditions: ['node', 'node-addons'],
+  },
 
   // 各テストファイル実行前にロードするセットアップファイル
   // setupTests.js が src/ ディレクトリ直下にあるので、そのパスを指定します。
