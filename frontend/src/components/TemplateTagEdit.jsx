@@ -18,13 +18,14 @@ const TemplateTagEdit = ({ tagName = "", colorCode = "000000", onSubmit }) => {
   const [tag, setTag] = useState(tagName);
   const [color, setColor] = useState(colorCode);
 
-
   // 表示用のカラーコード。#がなければ補う。
   const displayColor = color.startsWith("#") ? color : `#${color}`;
 
   return (
     <div className="max-w-md mx-auto mt-10 p-6 bg-gradient-to-b from-white to-gray-100 rounded shadow">
-      <h2 className="text-center text-lg font-semibold mb-6">テンプレートタグ編集</h2>
+      <h2 className="text-center text-lg font-semibold mb-6">
+        テンプレートタグ編集
+      </h2>
 
       {/* タグ名入力フォーム */}
       <div className="mb-4">
@@ -39,25 +40,31 @@ const TemplateTagEdit = ({ tagName = "", colorCode = "000000", onSubmit }) => {
         <p className="text-sm text-gray-500 mt-1">日本語,英数字（20字以内）</p>
       </div>
 
-      {/* カラーコード入力フォーム + 色プレビュー */}
+      {/* カラーコード入力フォーム + カラーピッカー */}
       <div className="mb-6">
         <label className="block text-sm font-medium mb-1">カラーコード</label>
         <div className="flex items-center gap-4">
+          {/* テキスト入力 */}
           <input
             type="text"
             className="border px-3 py-2 w-full rounded"
             value={color}
-            onChange={(e) => setColor(e.target.value)}
+            onChange={(e) => setColor(e.target.value.replace(/^#/, ""))} // #を除去してstateに格納
             placeholder="例: FF0000"
           />
-          {/* 色のサンプルボックス */}
-          <div
-            className="w-8 h-8 border rounded"
-            style={{ backgroundColor: displayColor }}
-            title={displayColor}
+
+          {/* カラーピッカー */}
+          <input
+            type="color"
+            value={displayColor}
+            onChange={(e) => setColor(e.target.value.replace(/^#/, ""))} // #なしでstateに反映
+            className="w-10 h-10 p-0 border rounded cursor-pointer"
+            title="色を選択"
           />
         </div>
-        <p className="text-sm text-gray-500 mt-1">英数字（6桁の16進数）</p>
+        <p className="text-sm text-gray-500 mt-1">
+          6桁の16進数カラーコード（例: FF0000）
+        </p>
       </div>
 
       {/* 完了ボタン */}

@@ -2,7 +2,7 @@
 
 import { Route } from 'react-router-dom';
 import CommunityLeavePage from '../pages/community_leave_page';
-import TemplateTagEditPage from '../pages/community_calendar_tag_edit_page';
+import TemplateTagEditPage from '../pages/community_template_tag_edit_page';
 
 export const CommunityRoutes = (
   <>
