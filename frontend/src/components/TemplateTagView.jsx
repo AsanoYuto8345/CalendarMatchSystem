@@ -11,7 +11,7 @@
  * - onClickEdit: 編集ボタン押下時の関数（引数に tag.id が渡される）
  * - onClickCreate: 新規作成ボタン押下時の関数
  */
-const TemplateTagView = ({ tags = [], onClickEdit, onClickCreate }) => {
+const TemplateTagView = ({ tags = [], onClickEdit, onClickCreate, onClickDelete }) => {
   return (
     <div className="max-w-md mx-auto mt-10 p-6 bg-gradient-to-b from-white to-gray-100 rounded shadow">
       {/* タイトル */}
@@ -22,7 +22,7 @@ const TemplateTagView = ({ tags = [], onClickEdit, onClickCreate }) => {
       {/* タグリスト */}
       <div className="space-y-4 mb-6">
         {tags.map((tag) => (
-          <div key={tag.name} className="flex items-center gap-4">
+          <div key={tag.id} className="flex items-center gap-4">
             {/* タグ名（背景色にカラーを適用） */}
             <input
               type="text"
@@ -42,6 +42,14 @@ const TemplateTagView = ({ tags = [], onClickEdit, onClickCreate }) => {
               className="px-4 py-1 bg-white border rounded hover:bg-gray-100"
             >
               編集
+            </button>
+
+            {/* 削除ボタン */}
+            <button
+              onClick={() => onClickDelete(tag.id)}
+              className="px-4 py-1 bg-white border rounded hover:bg-gray-100"
+            >
+              削除
             </button>
           </div>
         ))}
