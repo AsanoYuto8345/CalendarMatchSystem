@@ -1,3 +1,16 @@
+#単体テスト(フロントエンド)
+```bash
+npm install --save-dev vitest @testing-library/react @testing-library/jest-dom jsdom
+```
+```bash
+npm install react-router-dom
+```
+
+```bash
+npm test     
+```
+
+
 # カレンダーアプリケーション (Calendar App)
 
 このリポジトリは、**Flask + SQLite** をバックエンドに、**React (Create React App)** をフロントエンドに用いた簡易カレンダーアプリケーションです。  
