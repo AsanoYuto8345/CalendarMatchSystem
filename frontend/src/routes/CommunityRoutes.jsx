@@ -3,11 +3,12 @@
 import { Route } from 'react-router-dom';
 import CommunityLeavePage from '../pages/community_leave_page' 
 import TagPostPage from '../pages/community_calendar_tag_post_page';
+import TagPostCompleteMessagePage from '../pages/community_calendar_tag_post_complete_page';
 
 export const CommunityRoutes = (
   <>
     <Route path="community/:communityId/leave" element={<CommunityLeavePage />} />
     <Route path="community/:communityId/calendar/:date/tags/post" element={<TagPostPage />} />
-    <Route path="community/:communityId/calendar/:date/tags/post/complate" eletment={<TagPostPage />} />
+    <Route path="community/:communityId/calendar/:date/tags/post/complate" element={<TagPostCompleteMessagePage />} />
   </>
 )
