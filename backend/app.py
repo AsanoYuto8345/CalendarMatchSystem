@@ -1,7 +1,6 @@
 from flask import Flask, jsonify
 from flask_cors import CORS
 from flask_sqlalchemy import SQLAlchemy
-from database.models.community import community_bp
 
 app = Flask(__name__)
 CORS(app)
@@ -38,8 +37,8 @@ def get_messages():
     return jsonify([{"id": m.id, "text": m.text} for m in msgs])
 
 # Blueprint 登録
-app.register_blueprint(community_bp)
+from modules.community_service.route import community_bp
+app.register_blueprint(community_bp, url_prefix="/api")
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5001)
-
