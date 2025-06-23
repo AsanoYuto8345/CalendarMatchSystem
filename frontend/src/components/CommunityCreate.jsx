@@ -1,16 +1,5 @@
-// src/components/CommunityCreate.jsx
-
-/**
- * コミュニティ作成画面 UIコンポーネント
- * 作成者: 遠藤 信輝
- */
-
 import React, { useState } from 'react';
 
-/**
- * CommunityCreate コンポーネント
- * コミュニティ名と画像を送信して新規作成を行う
- */
 function CommunityCreate() {
   const [communityName, setCommunityName] = useState('');
   const [image, setImage] = useState(null);
@@ -19,14 +8,12 @@ function CommunityCreate() {
   const [loading, setLoading] = useState(false);
   const [showSuccessModal, setShowSuccessModal] = useState(false);
 
-  // 選択された画像ファイルの処理とプレビュー表示
   const handleImageChange = (e) => {
     const file = e.target.files[0];
     setImage(file);
     if (file) setPreview(URL.createObjectURL(file));
   };
 
-  // コミュニティ作成のフォーム送信処理
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
@@ -48,14 +35,16 @@ function CommunityCreate() {
       formData.append('community_name', communityName);
       if (image) formData.append('image', image);
 
-      const response = await fetch('http://localhost:5001/community/create', {
+      const response = await fetch('http://localhost:5001/api/community/create', {
         method: 'POST',
         body: formData
       });
 
       const text = await response.text();
       let data;
-      try { data = JSON.parse(text); } catch {
+      try {
+        data = JSON.parse(text);
+      } catch {
         setMessage(`サーバーエラー: レスポンスがJSONではありません (${response.status})`);
         return;
       }
@@ -120,7 +109,7 @@ function CommunityCreate() {
             onChange={handleImageChange}
             className="hidden"
           />
-          {image && <div className="mt-2 text-sm text-gray-600">選択された画像: {image.name} ({Math.round(image.size/1024)}KB)</div>}
+          {image && <div className="mt-2 text-sm text-gray-600">選択された画像: {image.name} ({Math.round(image.size / 1024)}KB)</div>}
         </div>
 
         {preview && (
@@ -137,7 +126,7 @@ function CommunityCreate() {
       </form>
 
       {message && (
-        <div className={`mt-4 p-3 rounded text-sm border ${message.includes('エラー')||message.includes('失敗') ? 'bg-red-100 text-red-800 border-red-300' : 'bg-green-100 text-green-800 border-green-300'}`}>
+        <div className={`mt-4 p-3 rounded text-sm border ${message.includes('エラー') || message.includes('失敗') ? 'bg-red-100 text-red-800 border-red-300' : 'bg-green-100 text-green-800 border-green-300'}`}>
           {message}
         </div>
       )}
