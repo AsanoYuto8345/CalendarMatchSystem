@@ -1,8 +1,8 @@
-# テンプレートタグモデル定義（C4 対応）
-# 作成者: 遠藤 信輝
+"""
+テンプレートタグモデル定義
+"""
 
 from app import db
-from database.models.community import CommunityModel
 
 class TemplateTagModel(db.Model):
     __tablename__ = "template_tags"
