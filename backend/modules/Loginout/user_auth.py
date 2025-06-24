@@ -5,10 +5,11 @@
 import uuid
 import hashlib
 from datetime import datetime, timedelta
-from typing import Any
+from typing import Any, Dict, Optional
+import requests # <-- requestsモジュールをインポート（HTTP通信用）
+import json     # <-- JSONデータを扱うため
 
-# C8 ユーザー情報管理部をインポート
-# !!!この行をコメントアウトまたは削除してください!!!
+# C8 ユーザー情報管理部をインポートする必要がなくなりました
 # from modules.users.user_data_management import UserDataManagement
 
 
@@ -198,20 +199,27 @@ class UserAuth:
         self,
         session_store: SessionStore,
         password_hasher: PasswordHasher,
-        user_data_manager: Any
+        # user_data_manager: Any # <-- この引数は削除します
+        # C8呼び出しをHTTP経由にするため、UserDataManagementのインスタンスは不要になります。
+        # 代わりにHTTPクライアントを注入できるようにします。
+        http_client: Any = requests # デフォルトでrequestsモジュールを使用
     ):
         """
         UserAuth のコンストラクタ。
-        セッションストア、パスワードハッシャー、C8 ユーザー情報管理部のインスタンスを受け取る。
+        セッションストア、パスワードハッシャー、HTTPクライアントのインスタンスを受け取る。
 
         Args:
             session_store (SessionStore): セッション管理のためのストア実装。
             password_hasher (PasswordHasher): パスワードハッシュ処理の実装。
-            user_data_manager (Any): C8 ユーザー情報管理部のインスタンス。（実際の型はUserDataManagement）
+            http_client (Any): HTTP通信を行うためのクライアント。（例: requestsモジュール）
         """
         self.session_store = session_store
         self.password_hasher = password_hasher
-        self.user_data_manager = user_data_manager
+        self.http_client = http_client # HTTPクライアントを保存
+
+        # C8のエンドポイントURL (仮のアドレス)
+        self.C8_BASE_URL = "http://localhost:8000/c8" # 例: C8がポート8000で動作すると仮定
+
 
     def handle_auth(self, url: str) -> tuple[int, str]:
         """
@@ -239,14 +247,26 @@ class UserAuth:
             # E1: URL形式不正
             return 400, "" # ステータスコード, セッションID or エラーメッセージ
 
-        # 正常: ダミーセッションIDを生成 (設計書に「ダミーセッションIDを生成」とあるため)
-        # 実際には、このメソッドで認証済みセッションのチェックを行う場合、
-        # 既存のセッションIDを検証し、有効であればそのセッションIDを返す
-        # ここでは設計書に沿って新規生成
-        # user_data_manager を使ってSIDを生成するよう修正しました
-        sid = self.user_data_manager.make_sid("dummy_user_id_for_auth") # M1設計書の指示に合わせてダミーIDを使用
-        return 200, sid
+        # C8のエンドポイントを呼び出してSIDを生成
+        try:
+            # make_sidエンドポイントへのPOSTリクエストをシミュレート
+            # user_id は "dummy_user_id_for_auth" を仮で渡します
+            payload = {"user_id": "dummy_user_id_for_auth"}
+            response = self.http_client.post(f"{self.C8_BASE_URL}/make_sid", json=payload)
+            response.raise_for_status() # HTTPエラーがあれば例外を発生させる
 
+            response_data = response.json()
+            sid = response_data.get("session_id", "") # C8が 'session_id' キーでSIDを返すと仮定
+
+            if sid:
+                return 200, sid
+            else:
+                # C8がSIDを返さなかった場合
+                return 500, "" # 内部サーバーエラー
+        except requests.exceptions.RequestException as e:
+            # HTTP通信エラーが発生した場合
+            print(f"Error calling C8 make_sid: {e}")
+            return 500, "" # 内部サーバーエラー
 
     def signin_user(self, email: str, pw: str) -> tuple[bool, str]:
         """
@@ -265,30 +285,57 @@ class UserAuth:
             検索対象のデータが該当しなかった場合、検索対象のデータが登録済みデータに存在しないことを報告し、404を返す。（E2）
             ※ここでは `result=False` と `sid=""` でエラーを示す。
         """
-        # 入力値の基本的なチェック (追加)
+        # 入力値の基本的なチェック
         if not email or not pw:
             return False, ""
 
-        # C8 ユーザー情報管理部からユーザー情報を取得
-        user_info = self.user_data_manager.get_user_by_email(email)
+        user_info = None
+        try:
+            # C8のget_user_by_emailエンドポイントを呼び出し
+            response = self.http_client.get(f"{self.C8_BASE_URL}/users_by_email/{email}")
+            response.raise_for_status()
+
+            # ユーザー情報が見つからない場合は204 No Contentなどと想定
+            if response.status_code == 200:
+                user_info = response.json()
+            elif response.status_code == 204: # 例: ユーザーが見つからない場合のC8の応答
+                user_info = None
+            else:
+                # その他のエラーレスポンス
+                print(f"Error from C8 get_user_by_email: {response.status_code} - {response.text}")
+                return False, "" # C8からの予期せぬエラー
+        except requests.exceptions.RequestException as e:
+            print(f"Error calling C8 get_user_by_email: {e}")
+            return False, ""
 
         if not user_info:
             # E2: 検索対象のデータが該当しなかった場合 (ユーザーが見つからない)
             return False, ""
 
         # パスワードの検証 (ハッシュ化されたパスワードと比較)
-        if not self.password_hasher.verify_password(pw, user_info["hashed_password"]):
+        if not self.password_hasher.verify_password(pw, user_info.get("hashed_password", "")):
             # E2: パスワード不一致も認証情報不一致として扱う
             return False, ""
 
         # 認証成功: C8 を使ってセッションIDを作成し、永続化する
-        session_id = self.user_data_manager.make_sid(user_info["user_id"])
+        session_id = ""
+        try:
+            payload = {"user_id": user_info["user_id"]}
+            response = self.http_client.post(f"{self.C8_BASE_URL}/make_sid", json=payload)
+            response.raise_for_status()
+
+            response_data = response.json()
+            session_id = response_data.get("session_id", "")
+        except requests.exceptions.RequestException as e:
+            print(f"Error calling C8 make_sid after auth: {e}")
+            return False, ""
+
         if session_id:
             # C2 内部のセッションストアにもアクティブセッションとして登録（有効期限管理のため）
             self.session_store.create_session(user_info["user_id"], session_id, datetime.now() + timedelta(hours=1)) # 例: 1時間有効
             return True, session_id
         else:
-            # セッションIDの生成に失敗した場合 (例: 既にSIDが存在する場合など)
+            # セッションIDの生成に失敗した場合
             return False, ""
 
 
@@ -308,11 +355,20 @@ class UserAuth:
             # 無効なセッションIDの場合 (空文字列など)
             return False
 
-        # C8 を使ってセッションIDを永続ストレージから削除
-        success_persistent_delete = self.user_data_manager.delete_sid(sid)
+        success_persistent_delete = False
+        try:
+            # C8のdelete_sidエンドポイントを呼び出し
+            response = self.http_client.delete(f"{self.C8_BASE_URL}/delete_sid/{sid}")
+            response.raise_for_status()
+            # C8が成功時に200 OK、または204 No Contentを返すことを想定
+            if response.status_code in [200, 204]:
+                success_persistent_delete = True
+        except requests.exceptions.RequestException as e:
+            print(f"Error calling C8 delete_sid: {e}")
+            success_persistent_delete = False # エラーが発生したら削除失敗とする
+
         # C2 内部のセッションストアからもアクティブセッションを削除
         success_in_memory_delete = self.session_store.delete_session(sid)
 
         # どちらか一方ででも成功すれば、処理としては成功とみなす
-        # より厳密には、両方成功する必要があるが、設計書に合わせてbool単一の返却
         return success_persistent_delete or success_in_memory_delete
