@@ -36,9 +36,13 @@ def get_messages():
     msgs = Message.query.all()
     return jsonify([{"id": m.id, "text": m.text} for m in msgs])
 
-# Blueprint 登録
-from modules.community_service.route import community_bp
-app.register_blueprint(community_bp, url_prefix="/api")
+from modules.community_service.route import community_bp as community_service_bp
+from modules.community_management.route import management_bp as community_management_bp
+
+app.register_blueprint(community_service_bp, url_prefix="/api/community")
+app.register_blueprint(community_management_bp, url_prefix="/api/community/manage")
+
+
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5001)
