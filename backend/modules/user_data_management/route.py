@@ -1,4 +1,6 @@
 # modules/users/route.py
+# C8 ユーザ情報管理部のAPIエンドポイントを定義
+# 作成者: [担当者の名前]
 
 from flask import Blueprint, request, jsonify
 from modules.users.user_data_management import UserDataManagement
@@ -12,8 +14,8 @@ except ImportError:
     logging.basicConfig(level=logging.INFO)
     user_logger = logging.getLogger(__name__)
 
-# Blueprintの定義 
-user_bp = Blueprint('users', __name__)
+# Blueprintの定義。URLプレフィックスは /api となっていることに注意
+user_bp = Blueprint('users', __name__, url_prefix='/api')
 
 @user_bp.route('/users/search', methods=['GET'])
 def search_user_data():

@@ -1,4 +1,6 @@
 # modules/users/user_data_management.py
+# C8 ユーザ情報管理部のM1 ユーザ情報管理主処理クラスに対応
+# 作成者: [担当者の名前]
 
 import sqlite3
 import os
@@ -35,6 +37,7 @@ class UserDataManagement:
             # dataフォルダが存在しない場合は作成 
             os.makedirs(os.path.dirname(DATABASE_NAME), exist_ok=True)
             self.conn = sqlite3.connect(DATABASE_NAME)
+            self.conn.row_factory = sqlite3.Row # row_factoryを設定して辞書形式で結果を取得
             self.cursor = self.conn.cursor()
             user_management_logger.info(f"Connected to database: {DATABASE_NAME}")
         except sqlite3.Error as e:
@@ -54,6 +57,7 @@ class UserDataManagement:
         F1 ユーザ情報とF2 ユーザ認証情報のテーブルを作成 
         """
         try:
+            self._connect_db() # テーブル作成前にDB接続を再確認
             # F1 ユーザ情報テーブル 
             self.cursor.execute('''
                 CREATE TABLE IF NOT EXISTS users (
@@ -77,6 +81,8 @@ class UserDataManagement:
         except sqlite3.Error as e:
             user_management_logger.error(f"Error creating tables: {e}")
             raise
+        finally:
+            self._close_db()
 
     def user_data_search(self, user_id):
         """
@@ -86,19 +92,21 @@ class UserDataManagement:
             user_id (str): 検索対象のユーザID
         Returns:
             tuple[bool, dict]: 処理の成否とユーザデータ辞書。 
-                              該当データなしの場合、Falseと空の辞書を返す。
+                               該当データなしの場合、Falseと空の辞書を返す。
         """
         user_management_logger.info(f"Searching user data for user_id: {user_id}")
         try:
+            self._connect_db() # 検索前にDB接続を再確認
             self.cursor.execute("SELECT user_id, user_name, email, password, profile_image FROM users WHERE user_id = ?", (user_id,))
             user_data = self.cursor.fetchone()
             if user_data:
+                # row_factoryを設定しているため、直接辞書としてアクセス可能
                 user_dict = {
-                    "id": user_data[0],
-                    "name": user_data[1],
-                    "email": user_data[2],
-                    "password": user_data[3],
-                    "icon": user_data[4]
+                    "id": user_data["user_id"],
+                    "name": user_data["user_name"],
+                    "email": user_data["email"],
+                    "password": user_data["password"],
+                    "icon": user_data["profile_image"]
                 }
                 return True, user_dict
             else:
@@ -127,7 +135,7 @@ class UserDataManagement:
         try:
             self._connect_db() # 登録前にDB接続を再確認
             self.cursor.execute("INSERT INTO users (user_id, user_name, email, password, profile_image) VALUES (?, ?, ?, ?, ?)",
-                                (user_id, name, email, hashed_pw, icon))
+                                 (user_id, name, email, hashed_pw, icon))
             self.conn.commit()
             return True
         except sqlite3.IntegrityError as e:
@@ -239,5 +247,6 @@ class UserDataManagement:
             self._close_db()
 
     # オブジェクトが破棄されるときにデータベース接続を閉じるためのデストラクタ
-    def __del__(self):
-        self._close_db()
+    # 各メソッドで接続と切断を行っているので、ここでは不要
+    # def __del__(self):
+    #     self._close_db()
