@@ -2,7 +2,7 @@
 # 作成者: [担当者の名前]
 
 from flask import Blueprint, request, jsonify
-from user_data_process import UserDataProcess
+from .user_data_process import UserDataProcess
 
 user_data_bp = Blueprint('user_data', __name__, url_prefix='/api/user')
 
