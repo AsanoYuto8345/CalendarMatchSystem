@@ -1,5 +1,12 @@
+// M19 追加完了M 担当者: 浅野勇翔
+
 import { useParams, useNavigate } from "react-router-dom";
 import TagPostComplete from "../components/TagPostComplateMessage";
+
+/**
+ * TagPostCompleteMwssagePage コンポーネント
+ * 追加完了Mを表示するページ
+ */
 
 const TagPostCompleteMesaagePage = () => {
   const { communityId } = useParams();
@@ -10,7 +17,7 @@ const TagPostCompleteMesaagePage = () => {
   }
 
   return (
-    <TagPostComplete onClose={handleClose}/>
+    <TagPostComplete onClose={handleClose} message={"追加"}/>
   );
 }
 

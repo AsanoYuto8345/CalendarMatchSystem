@@ -1,5 +1,4 @@
-// M11 新規タグ入力画面（ロジック処理部）
-// 担当者: 浅野勇翔
+// M18 新規タグ入力画面（ロジック処理部） 担当者: 浅野勇翔
 
 import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";

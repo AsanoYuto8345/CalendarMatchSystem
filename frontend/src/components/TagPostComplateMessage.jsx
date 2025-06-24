@@ -7,8 +7,9 @@
  *
  * Props:
  * - onClose: 閉じる処理を行う関数
+ * - message: 表示するメッセージの文字列
  */
-const TagPostCompleteMessage = ({ onClose }) => {
+const TagPostCompleteMessage = ({ onClose, message }) => {
   return (
     <div className="max-w-md mx-auto mt-10 p-6 bg-white border rounded shadow relative">
       {/* 閉じるボタン（右上） */}
@@ -22,7 +23,7 @@ const TagPostCompleteMessage = ({ onClose }) => {
 
       {/* 完了メッセージ */}
       <div className="text-center text-lg font-medium text-gray-800 mt-6">
-        追加完了
+        {message}完了
       </div>
     </div>
   );
