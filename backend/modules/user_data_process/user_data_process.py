@@ -1,8 +1,10 @@
+# user_data_process.py
 # C3 ユーザ情報処理部のM1, M2, M3, M4モジュールを実装したUserProcessクラス
 # 作成者: [担当者の名前]
 
 import uuid
 import hashlib
+import requests # requestsライブラリをインポート
 
 class UserDataProcess:
     """
@@ -10,6 +12,11 @@ class UserDataProcess:
     C1 UI処理部からユーザデータを受け取り、ユーザデータを各処理メソッドで処理し
     C1 UI処理部に返却する
     """
+
+    # C8 ユーザ情報管理部のAPIのベースURLを定義
+    # Flaskアプリケーションのmodules/users/route.pyでurl_prefix='/api'が設定されているため、
+    # ここではホストとポートのみを指定します。
+    C8_API_BASE_URL = "http://127.0.0.1:5000" # Flaskアプリケーションのホストとポートに合わせて変更してください
 
     def __init__(self):
         """
@@ -48,25 +55,39 @@ class UserDataProcess:
         user_id = str(uuid.uuid4())  # ユーザIDをランダム生成
         hashed_pw = self._hash_password(password)
 
-        # C8 ユーザ情報管理部への登録をシミュレート
-        # 実際にはC8のAPIを呼び出す
-        # 例: C8_user_management_api.register_user(user_id, hashed_pw, name, icon_name)
-        # ここでは成功を仮定
-        is_registered_in_c8 = True # C8との連携結果を仮定
-        if not is_registered_in_c8:
-            # E3: 登録済みデータあり (ここではUUID生成なので通常発生しないが、想定として)
-            return {"result": False, "error": "すでに存在するユーザIDです", "status": 409}
-
-        return {
-            "result": True,
-            "user_id": user_id,
+        # C8 ユーザ情報管理部への登録を要求
+        # エンドポイント: POST /api/users/register
+        # 外部設計書 F1 ユーザ情報よりemailもC8に登録するため追加
+        register_payload = {
+            "id": user_id,
             "hashed_pw": hashed_pw,
             "name": name,
-            "icon_name": icon_name
+            "email": email,
+            "icon": icon_name
         }
+        try:
+            response = requests.post(f"{self.C8_API_BASE_URL}/api/users/register", json=register_payload)
+            response_data = response.json()
 
-    def data_edit(self, user_id: str, password: str = None, 
-                  name: str = None, icon_name: str = None) -> dict:
+            if response.status_code == 201:
+                return {
+                    "result": True,
+                    "user_id": user_id,
+                    "hashed_pw": hashed_pw,
+                    "name": name,
+                    "icon_name": icon_name,
+                    "email": email
+                }
+            elif response.status_code == 409: # E3: 登録済みデータあり
+                return {"result": False, "error": "すでに存在するユーザIDまたはメールアドレスです", "status": 409}
+            else:
+                return {"result": False, "error": response_data.get("message", "C8でのユーザ登録に失敗しました"), "status": response.status_code}
+        except requests.exceptions.RequestException as e:
+            return {"result": False, "error": f"C8への接続エラー: {e}", "status": 500}
+
+
+    def data_edit(self, user_id: str, password: str = None,
+                  name: str = None, icon_name: str = None, email: str = None) -> dict: # emailを追加
         """
         M3 ユーザデータ編集処理
         変更したパスワードをハッシュ化して、ユーザデータの再登録を要求する。
@@ -75,6 +96,7 @@ class UserDataProcess:
             password (str, optional): 新しいパスワード. Defaults to None.
             name (str, optional): 新しい表示名. Defaults to None.
             icon_name (str, optional): 新しいアイコンのファイル名. Defaults to None.
+            email (str, optional): 新しいメールアドレス. Defaults to None.
         Returns:
             dict: 処理結果。
                   成功時は {"result": True}
@@ -84,33 +106,33 @@ class UserDataProcess:
         if not user_id:
             return {"result": False, "error": "ユーザIDが指定されていません", "status": 400}
 
-        update_data = {}
+        update_payload = {"id": user_id}
         if password:
-            update_data["hashed_pw"] = self._hash_password(password)
+            update_payload["hashed_pw"] = self._hash_password(password)
         if name:
-            update_data["name"] = name
+            update_payload["name"] = name
         if icon_name:
-            update_data["icon_name"] = icon_name
+            update_payload["icon"] = icon_name
+        if email: # Add email to update payload
+            update_payload["email"] = email
         
-        if not update_data:
+        if len(update_payload) == 1: # user_idだけの場合
             return {"result": False, "error": "更新する情報がありません", "status": 400}
 
-        # C8 ユーザ情報管理部への更新をシミュレート
-        # 実際にはC8のAPIを呼び出す
-        # 例: C8_user_management_api.update_user(user_id, update_data)
-        # ここでは成功を仮定し、対象のユーザが存在することを仮定
-        user_exists_in_c8 = True # C8でのユーザ存在チェックを仮定
-        if not user_exists_in_c8:
-            # E2: 該当データなし
-            return {"result": False, "error": "更新対象のユーザが存在しません", "status": 404}
-            
-        is_updated_in_c8 = True # C8との連携結果を仮定
-        if not is_updated_in_c8:
-             # C8で更新失敗した場合のエラー (C8からの具体的なエラーコードは要相談)
-            return {"result": False, "error": "ユーザ情報の更新に失敗しました", "status": 500}
+        # C8 ユーザ情報管理部への更新を要求
+        # エンドポイント: PUT /api/users/update
+        try:
+            response = requests.put(f"{self.C8_API_BASE_URL}/api/users/update", json=update_payload)
+            response_data = response.json()
 
-
-        return {"result": True}
+            if response.status_code == 200:
+                return {"result": True}
+            elif response.status_code == 404: # E2: 該当データなし
+                return {"result": False, "error": "更新対象のユーザが存在しません", "status": 404}
+            else:
+                return {"result": False, "error": response_data.get("message", "C8でのユーザ情報編集に失敗しました"), "status": response.status_code}
+        except requests.exceptions.RequestException as e:
+            return {"result": False, "error": f"C8への接続エラー: {e}", "status": 500}
 
     def data_get(self, user_id: str) -> dict:
         """
@@ -127,19 +149,26 @@ class UserDataProcess:
         if not user_id:
             return {"result": False, "error": "ユーザIDが指定されていません", "status": 400}
 
-        # C8 ユーザ情報管理部からのデータ取得をシミュレート
-        # 実際にはC8のAPIを呼び出す
-        # 例: user_data = C8_user_management_api.get_user(user_id)
-        # ここでは仮のデータを返す
-        mock_user_data = {
-            "user_id": user_id,
-            "email": f"user_{user_id}@example.com",
-            "name": f"TestUser_{user_id}",
-            "icon_name": "default.png"
-        }
-        
-        # E2: 該当データなし
-        if user_id not in ["mock_user_1", "mock_user_2"]: # 存在しないIDの例
-            return {"result": False, "error": "該当するユーザデータがありません", "status": 404}
+        # C8 ユーザ情報管理部からのデータ取得を要求
+        # エンドポイント: GET /api/users/search?id=<user_id>
+        try:
+            response = requests.get(f"{self.C8_API_BASE_URL}/api/users/search", params={"id": user_id})
+            response_data = response.json()
 
-        return {"result": True, "user_data": mock_user_data}
+            if response.status_code == 200:
+                # C8から返されるキーをC3のuser_data_getの期待する形式にマッピング
+                # C8は 'id', 'name', 'email', 'icon' を返す
+                # C3は 'user_id', 'email', 'name', 'icon_name' を期待
+                user_data_mapped = {
+                    "user_id": response_data.get("id"),
+                    "email": response_data.get("email"),
+                    "name": response_data.get("name"),
+                    "icon_name": response_data.get("icon")
+                }
+                return {"result": True, "user_data": user_data_mapped}
+            elif response.status_code == 404: # E2: 該当データなし
+                return {"result": False, "error": "該当するユーザデータがありません", "status": 404}
+            else:
+                return {"result": False, "error": response_data.get("message", "C8でのユーザ情報取得に失敗しました"), "status": response.status_code}
+        except requests.exceptions.RequestException as e:
+            return {"result": False, "error": f"C8への接続エラー: {e}", "status": 500}

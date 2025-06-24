@@ -1,9 +1,12 @@
+# c3_user_routes.py
 # C3 ユーザ情報処理部のAPIエンドポイントを定義
 # 作成者: [担当者の名前]
 
 from flask import Blueprint, request, jsonify
+# C3のビジネスロジックをインポート
 from .user_data_process import UserDataProcess
 
+# Blueprintの定義。URLプレフィックスは /api/user とする
 user_data_bp = Blueprint('user_data', __name__, url_prefix='/api/user')
 
 @user_data_bp.route('/register', methods=['POST'])
@@ -54,7 +57,8 @@ def edit_user_data():
             "user_id": "str",        # 編集対象のユーザID
             "password": "str",       # 新しいパスワード (任意)
             "name": "str",           # 新しい表示名 (任意)
-            "icon_name": "str"       # 新しいアイコンのファイル名 (任意)
+            "icon_name": "str",      # 新しいアイコンのファイル名 (任意)
+            "email": "str"           # 新しいメールアドレス (任意)
         }
     Returns:
         flask.Response: JSON形式のレスポンスを返却
@@ -68,9 +72,10 @@ def edit_user_data():
     password = data.get("password")
     name = data.get("name")
     icon_name = data.get("icon_name")
+    email = data.get("email") # Add email for update
 
     user_process = UserDataProcess()
-    result = user_process.data_edit(user_id, password, name, icon_name)
+    result = user_process.data_edit(user_id, password, name, icon_name, email)
 
     if result["result"]:
         return jsonify({"message": "ユーザ情報編集成功"}), 200
