@@ -68,6 +68,7 @@ const TagPostPage = () => {
   return (
     <TagPost
       tagList={tagList}
+      date={date}
       onSubmit={handleSubmit}
       onClickClose={handleClose}
     />

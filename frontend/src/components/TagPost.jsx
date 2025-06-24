@@ -19,8 +19,8 @@ const TagPost = ({ tagList = [], date ,onSubmit, onClickClose }) => {
     <div className="max-w-md mx-auto mt-10 p-6 bg-gradient-to-b from-white to-gray-100 rounded shadow">
       {/* ヘッダー部 */}
       <div className="flex justify-between items-center mb-4">
-        <div className="text-sm text-gray-500"></div>
-        <button className="text-lg font-bold" onClick={onClickClose}>{date}×</button>
+        <div className="text-sm text-gray-500">{date}</div>
+        <button className="text-lg font-bold" onClick={onClickClose}>×</button>
       </div>
 
       {/* タイトル */}
