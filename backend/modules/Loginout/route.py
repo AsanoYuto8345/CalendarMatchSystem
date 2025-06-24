@@ -1,117 +1,102 @@
-# modules/users/route.py
-# ユーザ認証関連のルーティング定義
-# 担当: 石田めぐみ
+# routes/routes.py
+# C1 UI処理部とC2 ユーザ認証処理部の間を繋ぐAPIルーティング
+# 担当: 石田めぐみ (UserAuthを担当)
 
-from flask import Blueprint, request, jsonify, make_response
-from modules.Loginout.user_auth import UserAuth, InMemorySessionStore, SHA256PasswordHasher
-from modules.users.user_data_management import UserDataManagement # C8 ユーザー情報管理部をインポート
+from flask import Blueprint, request, jsonify, current_app
+import os
+import logging
 
-# Blueprintの初期化
-user_bp = Blueprint("users", __name__, url_prefix="/api/auth")
+# UserAuthとPasswordHasherをインポート
+# Assuming user_auth.py is in modules/Loginout/
+from modules.Loginout.user_auth import UserAuth, SHA256PasswordHasher
 
-# UserAuthの初期化（実際にはDIコンテナなどから注入する）
-# ここでは簡易のために直接インスタンス化
-session_store = InMemorySessionStore()
-password_hasher = SHA256PasswordHasher()
-user_data_manager = UserDataManagement() # C8 ユーザー情報管理部のインスタンス
-user_auth = UserAuth(session_store, password_hasher, user_data_manager)
+# ロギング設定
+logger = logging.getLogger(__name__)
 
-@user_bp.route("/auth_main", methods=["GET"])
-def auth_main():
+# Blueprintの定義
+auth_bp = Blueprint('auth', __name__, url_prefix='/api/auth')
+
+# UserAuthのインスタンスはアプリケーション起動時に初期化されることを想定
+user_auth_instance: UserAuth = None
+
+def init_app(app_instance):
     """
-    M1 認証主処理のエンドポイント。
-    設計書に従い、URLを受け取り、ステータスとセッションIDを返す。
-    （M1の「認証主処理」は、通常、セッションの有効性確認やトークン検証に用いられるが、
-    設計書ではURL入力とダミーセッションID発行とあるため、それに準拠）
+    Flaskアプリケーションインスタンスの初期化時にUserAuthをセットアップします。
     """
-    # 設計書に従い、URLをクエリパラメータとして受け取ることを想定
-    url = request.args.get("url")
+    global user_auth_instance
+    password_hasher = SHA256PasswordHasher()
+    user_auth_instance = UserAuth(password_hasher=password_hasher)
+    logger.info("UserAuth instance initialized in auth_routes.py")
 
-    if not url:
-        return make_response(
-            jsonify({"message": "URL parameter is required"}),
-            400
-        )
 
-    status, sid = user_auth.handle_auth(url)
+@auth_bp.route('/login', methods=['POST'])
+def login_route():
+    """
+    M2 ログイン処理のAPIエンドポイント。
+    メールアドレスとパスワードでユーザー認証を行い、成功時にセッションIDを返す。
+    """
+    if not request.is_json:
+        logger.warning("login_route: Request must be JSON.")
+        return jsonify({"error": "Request must be JSON"}), 400
 
-    if status == 200:
-        return make_response(
-            jsonify({"message": "Auth main process successful", "session_id": sid}),
-            status
-        )
+    data = request.json
+    email = data.get('email')
+    password = data.get('pw')
+
+    # E1: 入力エラーチェック (メールアドレス、パスワードの未指定)
+    if not email or not isinstance(email, str):
+        logger.warning("login_route: Email is missing or invalid type.")
+        return jsonify({"error": "メールアドレスが未指定または形式不正です"}), 400
+    if not password or not isinstance(password, str):
+        logger.warning("login_route: Password is missing or invalid type.")
+        return jsonify({"error": "パスワードが未指定です"}), 400
+
+    # UserAuthインスタンスが存在することを確認
+    if user_auth_instance is None:
+        logger.error("login_route: UserAuth instance not initialized.")
+        return jsonify({"error": "サーバー内部エラー"}), 500
+
+    success, sid = user_auth_instance.signin_user(email, password)
+
+    if success:
+        logger.info(f"login_route: Login successful for email: {email}")
+        return jsonify({"message": "Login successful", "sid": sid}), 200
     else:
-        # E1: URL形式不正
-        return make_response(
-            jsonify({"message": "URL format is invalid", "status": status}),
-            status
-        )
+        # UserAuthのsignin_userは、認証失敗時（ユーザー不在、パスワード不一致など）にFalseを返す
+        logger.warning(f"login_route: Login failed for email: {email}")
+        return jsonify({"error": "メールアドレスまたはパスワードが不正です"}), 401 # 401 Unauthorized
 
-@user_bp.route("/login", methods=["POST"])
-def login():
+
+@auth_bp.route('/logout', methods=['DELETE']) # 設計書とuser_auth.pyの整合性からDELETEに統一
+def logout_route():
     """
-    M2 ログイン処理のエンドポイント。
-    C1 UI処理部からメールアドレスとパスワードを受け取り、
-    UserAuth の signin_user 関数に処理を依頼する。
-    成功すれば処理の成否とセッションIDを返す。
+    M3 ログアウト処理のAPIエンドポイント。
+    セッションIDを受け取り、C8にセッション削除を依頼する。
     """
-    data = request.get_json()
-    email = data.get("email")
-    password = data.get("password")
+    # DELETEリクエストの場合、JSONボディまたはURLパラメータからsidを取得することを考慮
+    sid = None
+    if request.is_json:
+        data = request.json
+        sid = data.get('sid')
+    else: # JSONボディでない場合（例: GETリクエストのようにURLパラメータで渡すDELETEリクエスト）
+        sid = request.args.get('sid') # クエリパラメータから取得
 
-    if not email or not password:
-        return make_response(
-            jsonify({"result": False, "message": "Email and password are required"}),
-            400
-        )
+    # E1: 入力エラーチェック (SIDの未指定)
+    if not sid or not isinstance(sid, str):
+        logger.warning(f"logout_route: Session ID (sid) is missing or invalid type: {sid}")
+        return jsonify({"error": "セッションIDが未指定または形式不正です"}), 400
+    
+    # UserAuthインスタンスが存在することを確認
+    if user_auth_instance is None:
+        logger.error("logout_route: UserAuth instance not initialized.")
+        return jsonify({"error": "サーバー内部エラー"}), 500
 
-    result, sid = user_auth.signin_user(email, password)
+    success = user_auth_instance.signout_user(sid)
 
-    if result:
-        response = make_response(
-            jsonify({"result": True, "message": "Login successful", "session_id": sid}),
-            200
-        )
-        # セッションIDをHTTP Only Cookieに設定することも検討する
-        # response.set_cookie('session_id', sid, httponly=True, secure=True)
-        return response
+    if success:
+        logger.info(f"logout_route: Logout successful for SID: {sid}")
+        return jsonify({"message": "Logout successful"}), 200
     else:
-        # 設計書のE2エラー（ユーザーが見つからない、またはパスワード不一致）
-        return make_response(
-            jsonify({"result": False, "message": "Login failed: Invalid credentials or user not found."}),
-            401 # Unauthorized
-        )
-
-
-@user_bp.route("/logout", methods=["POST"])
-def logout():
-    """
-    M3 ログアウト処理のエンドポイント。
-    C1 UI処理部からセッションIDを受け取り、
-    UserAuth の signout_user 関数に処理を依頼する。
-    処理の成否を返す。
-    """
-    # 設計書では M1 からセッションIDを受け取るとあるが、
-    # 実際のフローでは C1 UI処理部 (例: ヘッダーまたはCookie) から受け取る
-    session_id = request.headers.get("X-Session-ID")
-    # または session_id = request.cookies.get('session_id')
-
-    if not session_id:
-        return make_response(
-            jsonify({"result": False, "message": "Session ID is required"}),
-            400
-        )
-
-    result = user_auth.signout_user(session_id)
-
-    if result:
-        response = make_response(jsonify({"result": True, "message": "Logout successful"}), 200)
-        # CookieからセッションIDを削除する場合
-        # response.set_cookie('session_id', '', expires=0, httponly=True, secure=True)
-        return response
-    else:
-        # セッションIDが無効な場合など
-        return make_response(
-            jsonify({"result": False, "message": "Logout failed: Session ID is invalid or not found."}),
-            400
-        )
+        # user_auth_instance.signout_userがFalseを返すのはC8との通信失敗など
+        logger.error(f"logout_route: Logout failed for SID: {sid} due to internal error or C8 issue.")
+        return jsonify({"error": "ログアウト処理中にエラーが発生しました"}), 500 # 500 Internal Server Error
