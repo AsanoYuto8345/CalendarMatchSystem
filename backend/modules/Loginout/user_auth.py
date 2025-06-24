@@ -1,13 +1,15 @@
-# modules/users/user_auth.py
+# modules/Loginout/user_auth.py
 # C2 ユーザ認証処理部
 # 担当: 石田めぐみ
 
 import uuid
 import hashlib
 from datetime import datetime, timedelta
+from typing import Any
 
 # C8 ユーザー情報管理部をインポート
-from modules.users.user_data_management import UserDataManagement
+# !!!この行をコメントアウトまたは削除してください!!!
+# from modules.users.user_data_management import UserDataManagement
 
 
 # --- C2 内部コンポーネント: パスワードハッシュ処理 ---
@@ -196,7 +198,7 @@ class UserAuth:
         self,
         session_store: SessionStore,
         password_hasher: PasswordHasher,
-        user_data_manager: UserDataManagement
+        user_data_manager: Any
     ):
         """
         UserAuth のコンストラクタ。
@@ -205,7 +207,7 @@ class UserAuth:
         Args:
             session_store (SessionStore): セッション管理のためのストア実装。
             password_hasher (PasswordHasher): パスワードハッシュ処理の実装。
-            user_data_manager (UserDataManagement): C8 ユーザー情報管理部のインスタンス。
+            user_data_manager (Any): C8 ユーザー情報管理部のインスタンス。（実際の型はUserDataManagement）
         """
         self.session_store = session_store
         self.password_hasher = password_hasher
@@ -231,7 +233,7 @@ class UserAuth:
             処理フラグや入力データ形式が不正の場合、入力エラーとしてステータスコード400を返す。(E1)
             検索対象のデータが該当しなかった場合、検索対象のデータが登録済みデータに存在しないことを報告し、404を返す。（E2）
             ※ M1 の設計書ではE2はURLとは直接関連しないため、ここではURL形式不正 (E1) のみ考慮。
-               E2は M2 ログイン処理で発生しうるエラーと解釈。
+                E2は M2 ログイン処理で発生しうるエラーと解釈。
         """
         if not isinstance(url, str) or not url.startswith("http"):
             # E1: URL形式不正
@@ -241,7 +243,8 @@ class UserAuth:
         # 実際には、このメソッドで認証済みセッションのチェックを行う場合、
         # 既存のセッションIDを検証し、有効であればそのセッションIDを返す
         # ここでは設計書に沿って新規生成
-        sid = str(uuid.uuid4())
+        # user_data_manager を使ってSIDを生成するよう修正しました
+        sid = self.user_data_manager.make_sid("dummy_user_id_for_auth") # M1設計書の指示に合わせてダミーIDを使用
         return 200, sid
 
 
@@ -262,6 +265,10 @@ class UserAuth:
             検索対象のデータが該当しなかった場合、検索対象のデータが登録済みデータに存在しないことを報告し、404を返す。（E2）
             ※ここでは `result=False` と `sid=""` でエラーを示す。
         """
+        # 入力値の基本的なチェック (追加)
+        if not email or not pw:
+            return False, ""
+
         # C8 ユーザー情報管理部からユーザー情報を取得
         user_info = self.user_data_manager.get_user_by_email(email)
 
@@ -298,7 +305,7 @@ class UserAuth:
             result (bool): 処理の成否 (false: エラー, true: 正常)。 (出力先: C1 UI処理部)
         """
         if not sid:
-            # 無効なセッションIDの場合
+            # 無効なセッションIDの場合 (空文字列など)
             return False
 
         # C8 を使ってセッションIDを永続ストレージから削除
