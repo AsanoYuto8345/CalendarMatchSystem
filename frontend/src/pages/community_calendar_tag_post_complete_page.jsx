@@ -4,7 +4,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import TagPostComplete from "../components/TagPostComplateMessage";
 
 /**
- * TagPostCompleteMwssagePage コンポーネント
+ * TagPostCompleteMessagePage コンポーネント
  * 追加完了Mを表示するページ
  */
 
