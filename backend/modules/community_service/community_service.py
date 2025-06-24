@@ -1,19 +1,21 @@
-# backend/modules/community_service/community_service.py
+# C4 コミュニティ処理部クラス定義　作成者: 遠藤信輝
+
 import logging
 from flask import request, jsonify
 
 logger = logging.getLogger(__name__)
 
 class CommunityService:
-    @staticmethod
-    def community_create():
+    def __init__(self):
+        pass
+
+    def create(self):
         name = request.json.get("community_name", "").strip()
         if not name:
             return jsonify({"error": "コミュニティ名が未入力です"}), 400
         if len(name) > 16:
             return jsonify({"error": "16文字以内にしてください"}), 400
 
-        # DB操作を省略して成功レスポンスを返す（モック）
         logger.info(f"✅ コミュニティ登録: {name}")
         return jsonify({
             "result": True,
@@ -22,8 +24,7 @@ class CommunityService:
             "community_id": 1
         }), 201
 
-    @staticmethod
-    def community_join():
+    def join(self):
         name = request.json.get("community_name", "").strip()
         if not name:
             return jsonify({"error": "コミュニティ名が未入力です"}), 400
@@ -36,8 +37,7 @@ class CommunityService:
             "community_id": 1
         }), 200
 
-    @staticmethod
-    def community_leave():
+    def leave(self):
         user_id = request.json.get("id", "").strip()
         community_id = request.json.get("community_id", "").strip()
 
@@ -49,8 +49,7 @@ class CommunityService:
             "message": f"ユーザ '{user_id}' はコミュニティ {community_id} を脱退しました"
         }), 200
 
-    @staticmethod
-    def edit_template_tags():
+    def edit_tags(self):
         method = request.method
         data = request.get_json() or {}
         community_id = data.get("community_id", "").strip()
@@ -58,7 +57,6 @@ class CommunityService:
         if not community_id.isdigit():
             return jsonify({"error": "無効なコミュニティIDです"}), 400
 
-        community_id = int(community_id)
         tag_id = data.get("template_tag_id", "").strip()
         tag_value = data.get("tag", "").strip()
 
@@ -80,8 +78,7 @@ class CommunityService:
 
         return jsonify({"error": "許可されていないメソッドです"}), 405
 
-    @staticmethod
-    def get_template_tags():
+    def get_tags(self):
         community_id = request.args.get("community_id", "").strip()
         if not community_id.isdigit():
             return jsonify({"error": "コミュニティIDが未指定または不正です"}), 400
