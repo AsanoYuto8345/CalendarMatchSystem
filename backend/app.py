@@ -2,6 +2,8 @@ from flask import Flask, jsonify
 from flask_cors import CORS
 from flask_sqlalchemy import SQLAlchemy
 
+from modules.user_data_management.route import user_bp
+
 app = Flask(__name__)
 CORS(app)
 
@@ -35,6 +37,8 @@ def init_db():
 def get_messages():
     msgs = Message.query.all()
     return jsonify([{"id": m.id, "text": m.text} for m in msgs])
+
+app.register_blueprint(user_bp)      # C8 ユーザ情報管理部のBlueprintを登録
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5001)

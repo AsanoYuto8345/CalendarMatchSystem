@@ -3,7 +3,7 @@
 # 作成者: [担当者の名前]
 
 from flask import Blueprint, request, jsonify
-from modules.users.user_data_management import UserDataManagement
+from .user_data_management import UserDataManagement
 import logging # コーディング規約に沿ってログ出力を設定 
 
 # ロガー設定 (utils/logger.py があればそれを使用、なければ基本的な設定) 
