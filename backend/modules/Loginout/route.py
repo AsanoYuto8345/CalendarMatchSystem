@@ -7,7 +7,7 @@ from modules.users.user_auth import UserAuth, InMemorySessionStore, SHA256Passwo
 from modules.users.user_data_management import UserDataManagement # C8 ユーザー情報管理部をインポート
 
 # Blueprintの初期化
-user_bp = Blueprint("users", __name__, url_prefix="/users")
+user_bp = Blueprint("users", __name__, url_prefix="/api/user/auth")
 
 # UserAuthの初期化（実際にはDIコンテナなどから注入する）
 # ここでは簡易のために直接インスタンス化
