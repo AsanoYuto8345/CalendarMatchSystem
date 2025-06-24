@@ -8,10 +8,7 @@ from datetime import datetime, timedelta
 from typing import Any, Dict, Optional
 import requests # <-- requestsモジュールをインポート（HTTP通信用）
 import json     # <-- JSONデータを扱うため
-
-# C8 ユーザー情報管理部をインポートする必要がなくなりました
-# from modules.users.user_data_management import UserDataManagement
-
+import os # 環境変数アクセス用に追加
 
 # --- C2 内部コンポーネント: パスワードハッシュ処理 ---
 # このセクションは C2 の内部で利用されるパスワードハッシュ処理を定義します。
@@ -199,10 +196,7 @@ class UserAuth:
         self,
         session_store: SessionStore,
         password_hasher: PasswordHasher,
-        # user_data_manager: Any # <-- この引数は削除します
-        # C8呼び出しをHTTP経由にするため、UserDataManagementのインスタンスは不要になります。
-        # 代わりにHTTPクライアントを注入できるようにします。
-        http_client: Any = requests # デフォルトでrequestsモジュールを使用
+        http_client: Any = requests
     ):
         """
         UserAuth のコンストラクタ。
@@ -215,17 +209,16 @@ class UserAuth:
         """
         self.session_store = session_store
         self.password_hasher = password_hasher
-        self.http_client = http_client # HTTPクライアントを保存
+        self.http_client = http_client
 
-        # C8のエンドポイントURL (仮のアドレス)
-        self.C8_BASE_URL = "http://localhost:8000/c8" # 例: C8がポート8000で動作すると仮定
+        # 環境変数からC8のベースURLを取得。設定されていない場合はデフォルト値を使用。
+        self.C8_BASE_URL = os.environ.get("C8_BASE_URL", "http://localhost:8000/c8")
 
 
     def handle_auth(self, url: str) -> tuple[int, str]:
         """
         M1 認証主処理:
         入力されたURLの形式チェックなどを行い、結果を返却する。
-        （設計書に基づき、URLの形式チェックを行うが、認証ロジックは含まない）
 
         入力:
             url (String): 入力されたURL。 (入力元: ブラウザ)
@@ -239,34 +232,34 @@ class UserAuth:
 
         エラー処理:
             処理フラグや入力データ形式が不正の場合、入力エラーとしてステータスコード400を返す。(E1)
-            検索対象のデータが該当しなかった場合、検索対象のデータが登録済みデータに存在しないことを報告し、404を返す。（E2）
-            ※ M1 の設計書ではE2はURLとは直接関連しないため、ここではURL形式不正 (E1) のみ考慮。
-                E2は M2 ログイン処理で発生しうるエラーと解釈。
         """
         if not isinstance(url, str) or not url.startswith("http"):
-            # E1: URL形式不正
-            return 400, "" # ステータスコード, セッションID or エラーメッセージ
+            return 400, ""
 
-        # C8のエンドポイントを呼び出してSIDを生成
         try:
-            # make_sidエンドポイントへのPOSTリクエストをシミュレート
-            # user_id は "dummy_user_id_for_auth" を仮で渡します
             payload = {"user_id": "dummy_user_id_for_auth"}
             response = self.http_client.post(f"{self.C8_BASE_URL}/make_sid", json=payload)
-            response.raise_for_status() # HTTPエラーがあれば例外を発生させる
+            response.raise_for_status()
 
             response_data = response.json()
-            sid = response_data.get("session_id", "") # C8が 'session_id' キーでSIDを返すと仮定
+            sid = response_data.get("session_id", "")
 
             if sid:
                 return 200, sid
             else:
-                # C8がSIDを返さなかった場合
-                return 500, "" # 内部サーバーエラー
-        except requests.exceptions.RequestException as e:
-            # HTTP通信エラーが発生した場合
-            print(f"Error calling C8 make_sid: {e}")
-            return 500, "" # 内部サーバーエラー
+                print("Error: C8 did not return a session ID for handle_auth.")
+                return 500, ""
+        except Exception as e: # requests.exceptions.RequestException を Exception に変更
+            print(f"Error calling C8 make_sid for handle_auth: {e}")
+            return 500, ""
+        # json.JSONDecodeError は RequestException のサブクラスではないため、
+        # もし JSONDecodeError を個別に捕捉したい場合は、Exception の前に記述する必要がある
+        # ただし、requests.exceptions.RequestException が多くのネットワーク関連エラーをカバーするため、
+        # 通常はそれらを含めて Exception で捕捉すれば十分
+        except json.JSONDecodeError as e:
+            print(f"Error decoding JSON from C8 response for handle_auth: {e}")
+            return 500, ""
+
 
     def signin_user(self, email: str, pw: str) -> tuple[bool, str]:
         """
@@ -282,39 +275,43 @@ class UserAuth:
             sid (String): セッションID。 (出力先: C1 UI処理部)
 
         エラー処理:
-            検索対象のデータが該当しなかった場合、検索対象のデータが登録済みデータに存在しないことを報告し、404を返す。（E2）
-            ※ここでは `result=False` と `sid=""` でエラーを示す。
+            検索対象のデータが該当しなかった場合、検索対象のデータが登録済みデータに存在しないことを報告し、`result=False` を返す。（E2）
         """
-        # 入力値の基本的なチェック
         if not email or not pw:
+            print("Warning: Email or password cannot be empty for signin.")
             return False, ""
 
         user_info = None
         try:
             # C8のget_user_by_emailエンドポイントを呼び出し
             response = self.http_client.get(f"{self.C8_BASE_URL}/users_by_email/{email}")
-            response.raise_for_status()
+            
+            # C8が204 (No Content) を返した場合、ユーザーは存在しない
+            if response.status_code == 204:
+                print(f"Authentication failed: User with email '{email}' not found.")
+                return False, ""
+            
+            response.raise_for_status() # それ以外のHTTPエラーがあれば例外を発生させる
 
-            # ユーザー情報が見つからない場合は204 No Contentなどと想定
-            if response.status_code == 200:
-                user_info = response.json()
-            elif response.status_code == 204: # 例: ユーザーが見つからない場合のC8の応答
-                user_info = None
-            else:
-                # その他のエラーレスポンス
-                print(f"Error from C8 get_user_by_email: {response.status_code} - {response.text}")
-                return False, "" # C8からの予期せぬエラー
-        except requests.exceptions.RequestException as e:
-            print(f"Error calling C8 get_user_by_email: {e}")
+            user_info = response.json()
+            user_id = user_info.get("user_id")
+            hashed_password = user_info.get("hashed_password")
+
+            if not user_id or not hashed_password:
+                print(f"Error: Incomplete user data from C8 for email: {email}")
+                return False, ""
+                
+        except Exception as e: # requests.exceptions.HTTPError などをまとめて Exception に変更
+            print(f"Error during C8 user info retrieval for email {email}: {e}")
+            return False, ""
+        except json.JSONDecodeError as e:
+            # C8からのレスポンスが不正なJSONだった場合
+            print(f"Error decoding JSON from C8 get_user_by_email: {e}")
             return False, ""
 
-        if not user_info:
-            # E2: 検索対象のデータが該当しなかった場合 (ユーザーが見つからない)
-            return False, ""
 
-        # パスワードの検証 (ハッシュ化されたパスワードと比較)
         if not self.password_hasher.verify_password(pw, user_info.get("hashed_password", "")):
-            # E2: パスワード不一致も認証情報不一致として扱う
+            print("Authentication failed: Invalid password.")
             return False, ""
 
         # 認証成功: C8 を使ってセッションIDを作成し、永続化する
@@ -324,19 +321,25 @@ class UserAuth:
             response = self.http_client.post(f"{self.C8_BASE_URL}/make_sid", json=payload)
             response.raise_for_status()
 
-            response_data = response.json()
+            response_data = response.json() 
             session_id = response_data.get("session_id", "")
-        except requests.exceptions.RequestException as e:
-            print(f"Error calling C8 make_sid after auth: {e}")
-            return False, ""
 
-        if session_id:
-            # C2 内部のセッションストアにもアクティブセッションとして登録（有効期限管理のため）
-            self.session_store.create_session(user_info["user_id"], session_id, datetime.now() + timedelta(hours=1)) # 例: 1時間有効
-            return True, session_id
-        else:
-            # セッションIDの生成に失敗した場合
+            if not session_id:
+                print("Error: C8 did not return a session ID after successful user authentication.")
+                return False, "" # C8がSIDを返さなかった場合
+
+        except Exception as e: # requests.exceptions.HTTPError などをまとめて Exception に変更
+            print(f"Error during C8 SID creation for user {user_info.get('user_id', 'N/A')}: {e}")
             return False, ""
+        except json.JSONDecodeError as e:
+            # C8からのレスポンスが不正なJSONだった場合
+            print(f"Error decoding JSON from C8 make_sid: {e}")
+            return False, ""
+        
+
+        # 全てのtry-exceptブロックを抜けて、SIDが正常に取得できた場合のみ実行
+        self.session_store.create_session(user_info["user_id"], session_id, datetime.now() + timedelta(hours=1))
+        return True, session_id
 
 
     def signout_user(self, sid: str) -> bool:
@@ -345,30 +348,30 @@ class UserAuth:
         セッションIDを受け取り、そのセッションを破棄することでログアウトを行う。
 
         入力:
-            sid (String): セッションID。 (入力元: M1)
-                ※ M1 は認証主処理なので、実際にはUI (C1) から受け取ると解釈。
+            sid (String): セッションID。
 
         出力:
-            result (bool): 処理の成否 (false: エラー, true: 正常)。 (出力先: C1 UI処理部)
+            result (bool): 処理の成否 (false: エラー, true: 正常)。
         """
         if not sid:
-            # 無効なセッションIDの場合 (空文字列など)
+            print("Warning: Attempted to sign out with an empty SID.")
             return False
 
         success_persistent_delete = False
         try:
-            # C8のdelete_sidエンドポイントを呼び出し
             response = self.http_client.delete(f"{self.C8_BASE_URL}/delete_sid/{sid}")
             response.raise_for_status()
-            # C8が成功時に200 OK、または204 No Contentを返すことを想定
-            if response.status_code in [200, 204]:
+            if response.status_code in [200, 204]: # 204 No Content も成功とみなす
                 success_persistent_delete = True
-        except requests.exceptions.RequestException as e:
+        except Exception as e: # requests.exceptions.HTTPError などをまとめて Exception に変更
             print(f"Error calling C8 delete_sid: {e}")
-            success_persistent_delete = False # エラーが発生したら削除失敗とする
+            success_persistent_delete = False
+        except json.JSONDecodeError as e:
+            print(f"Error decoding JSON from C8 delete_sid: {e}")
+            success_persistent_delete = False
 
-        # C2 内部のセッションストアからもアクティブセッションを削除
+
         success_in_memory_delete = self.session_store.delete_session(sid)
 
-        # どちらか一方ででも成功すれば、処理としては成功とみなす
+        # C8での削除に成功したか、内部セッションストアでの削除に成功したか、どちらかでOK
         return success_persistent_delete or success_in_memory_delete
