@@ -16,7 +16,7 @@ class UserDataProcess:
     # C8 ユーザ情報管理部のAPIのベースURLを定義
     # Flaskアプリケーションのmodules/users/route.pyでurl_prefix='/api'が設定されているため、
     # ここではホストとポートのみを指定します。
-    C8_API_BASE_URL = "http://127.0.0.1:5000" # Flaskアプリケーションのホストとポートに合わせて変更してください
+    C8_API_BASE_URL = "http://localhost:5001" # Flaskアプリケーションのホストとポートに合わせて変更してください
 
     def __init__(self):
         """
