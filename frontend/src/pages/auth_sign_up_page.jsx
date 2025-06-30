@@ -1,5 +1,7 @@
 /**
- * サインアップ処理ページ
+ * M6 サインアップ処理ページ
+ * - ユーザー登録APIにフォーム情報を送信
+ * - 成功時にログインページへ遷移
  * 作成者: 石田めぐみ
  */
 
@@ -9,12 +11,6 @@ import { useNavigate } from 'react-router-dom';
 
 import SignUpUI from '../components/SignupUI';
 
-/**
- * auth_signup_page
- * - サインアップフォーム表示
- * - 入力情報をC1（ユーザ作成API）へ送信
- * - 結果メッセージを表示
- */
 const AuthSignupPage = () => {
   const [msg, setMsg] = useState('');
   const navigate = useNavigate();
@@ -38,10 +34,12 @@ const AuthSignupPage = () => {
       formData.append('icon_file', iconFile);
     }
 
-    axios.post(`${process.env.REACT_APP_API_SERVER_URL}/api/users`, formData)
+    // APIエンドポイント: POST /api/user/register に変更
+    axios.post(`${process.env.REACT_APP_API_SERVER_URL}/api/user/register`, formData)
       .then(() => {
         setMsg('アカウントを作成しました');
-        navigate('/signin');
+        // サインインページへ遷移
+        navigate('/auth/login');
       })
       .catch(() => {
         setMsg('作成に失敗しました。もう一度お試しください。');
