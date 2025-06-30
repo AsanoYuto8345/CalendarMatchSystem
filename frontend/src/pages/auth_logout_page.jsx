@@ -10,6 +10,7 @@ import axios from 'axios';
 
 import LogoutUI from '../components/LogoutUI';
 
+
 const AuthLogoutPage = () => {
   const navigate = useNavigate();
 
