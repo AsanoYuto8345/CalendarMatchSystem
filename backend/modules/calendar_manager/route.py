@@ -2,7 +2,7 @@
 
 from flask import Blueprint, request, jsonify
 
-from ...app import db # app.pyからdbインスタンスをインポート
+from app import db # app.pyからdbインスタンスをインポート
 from .calendar_manager import CalendarManager, Tag # CalendarManagerとTagモデルをインポート
 
 calendar_manager_bp = Blueprint('calendar_manager', __name__, url_prefix='/api/calendar-manager')
