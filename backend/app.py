@@ -42,5 +42,5 @@ def get_community_name(communityId):
     return jsonify({"community_name": "仮コミュニティ名", "communityId": communityId})
 
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=5001)
+    app.run(host="0.0.0.0", port=5001, debug=True)
 
