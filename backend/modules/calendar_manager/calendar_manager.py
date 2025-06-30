@@ -1,20 +1,5 @@
-# C10 カレンダー情報管理部 CalendarManagerクラス  担当: 角田 一颯
-
-from flask_sqlalchemy import SQLAlchemy
-from flask import current_app
-
-class Tag(db.Model):
-    """
-    タグ情報を保持するデータベースモデル
-    messages.db に保存されます
-    """
-    __tablename__ = 'tags' # テーブル名を明確に指定
-    # __bind_key__ は指定しない (デフォルトのDBを使用するため)
-    id = db.Column(db.String(50), primary_key=True) # タグID
-    name = db.Column(db.String(100), unique=True, nullable=False) # 表示名
-
-    def __repr__(self):
-        return f"<Tag(id='{self.id}', name='{self.name}')>"
+# C10 カレンダー情報管理部 CalendarManagerクラス  担当: 角田 一颯, 浅野勇翔
+from ...database.models.tag import Tag
 
 class CalendarManager:
     """
@@ -30,9 +15,28 @@ class CalendarManager:
         """
         self.db = db_instance
 
-    def tag_add(self, tag_id, tag_name):
+
+    def request_calendar_data(self, community_id, date):
         """
-        M1 カレンダー情報管理主処理 - タグ追加
+        M2 カレンダー情報要求
+        
+        Args: 
+            community_id (str): コミュニティID
+            date (date): 日付
+            
+        Returns:
+            dict: 処理結果 (`result: bool`, `message: str`)
+        """
+        
+        if not community_id or date:
+            return {"result": False, "message": "コミュニティIDと日付は必須です"}
+        
+        self.db.session.
+            
+        
+    def tag_data_save(self, tag_id, tag_name):
+        """
+        M2 カレンダー情報管理主処理 - タグ追加
 
         Args:
             tag_id (str): タグID
