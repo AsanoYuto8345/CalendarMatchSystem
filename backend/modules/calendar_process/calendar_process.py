@@ -16,14 +16,14 @@ class CalenderProcess:
         """
         self.base_url = base_url
 
-    def tag_add(self, tag_name, tag_color, communityId):
+    def tag_add(self, tag_name, tag_color, community_id):
         """
         M2 タグ追加処理（C10管理部に追加要求）
 
         Args:
             tag_name (str): 表示名
             tag_color (str): タグのカラーコード
-            communityId (str): コミュニティID
+            community_id (str): コミュニティID
 
         Returns:
             tuple[bool, dict]: (成功可否, 管理部からの応答内容)
@@ -39,7 +39,7 @@ class CalenderProcess:
                     "tag_id": tag_id,
                     "tag_name": tag_name,
                     "tag_color": tag_color,
-                    "comunityId": communityId
+                    "comunity_id": community_id
                     }
             )
             if response.status_code == 200:
@@ -60,10 +60,35 @@ class CalenderProcess:
             tuple[bool, dict]: (成功可否, 管理部からの応答内容)
         """
         try:
-            response = requests.post(
+            response = requests.delete(
                 f"{self.base_url}/tag/delete",
                 json={
                       "tag_id": tag_id
+                    }
+            )
+            if response.status_code == 200:
+                return True, response.json()
+            else:
+                return False, response.json()
+        except Exception as e:
+            return False, {"error": "通信エラー", "details": str(e)}
+
+    def tag_get_from_community_and_date(self, community_id, date):
+        """
+        M4 タグコミュニティ検索処理
+        
+        Args:
+            community_id (str): コミュニティID
+            date (date)
+        Returns:
+            tuple[bool, dict]: (成功可否, 管理部からの応答内容)
+        """
+        try:
+            response = requests.get(
+                f"{self.base_url}/find/community/date",
+                json={
+                    "community_id": community_id,
+                    "date": date
                     }
             )
             if response.status_code == 200:

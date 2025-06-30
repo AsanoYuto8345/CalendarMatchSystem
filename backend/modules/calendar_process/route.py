@@ -3,22 +3,19 @@
 from flask import Blueprint, request, jsonify
 from .calendar_process import CalenderProcess
 
-calendar_bp = Blueprint('calendar', __name__, url_prefix='/api/<string:communityId>/calendar')
+calendar_bp = Blueprint('calendar', __name__, url_prefix='/api/<string:community_id>/calendar')
 processor = CalenderProcess()
-
-@calendar_bp.before_request
-def before_request():
-    community_id = request.view_args.get('communityId')
 
 @calendar_bp.route('/tag/add', methods=['POST'])
 def add_tag():
+    community_id = request.view_args.get('community_id')
     data = request.get_json()
     tag_name = data.get("tag_name")
     tag_color = data.get("tag_color")
     if not tag_name or not tag_color:
         return jsonify({"error": "tag_nameもしくはtag_colorが未指定"}), 400
 
-    success, result = processor.tag_add(tag_name, tag_color)
+    success, result = processor.tag_add(tag_name, tag_color, community_id)
     return (jsonify(result), 200) if success else (jsonify(result), 400)
 
 @calendar_bp.route('/tag/delete', methods=['DELETE'])
@@ -31,3 +28,16 @@ def delete_tag():
 
     success, result = processor.tag_delete(tag_id)
     return (jsonify(result), 200) if success else (jsonify(result), 404)
+
+@calendar_bp.route('/tag/get', methods=['GET'])
+def get_community_date_tag():
+    community_id = request.view_args.get('community_id')
+    data = request.get_json()
+    date = data.get("date")
+    
+    if not date:
+        return jsonify({"error": "date未指定"}), 400
+    
+    success, result = processor.tag_get_from_community_and_date(community_id, date)
+    return (jsonify(result), 200) if success else (jsonify(result), 404)
+    
