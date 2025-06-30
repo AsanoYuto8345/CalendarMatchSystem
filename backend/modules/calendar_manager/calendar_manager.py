@@ -25,111 +25,85 @@ class CalendarManager:
             date (date): 日付
             
         Returns:
-            dict: 処理結果 (`result: bool`, `message: str`)
+            dict: 処理結果 (data: List[Tag],`result: bool`, `message: str`)
         """
         
         if not community_id or date:
             return {"result": False, "message": "コミュニティIDと日付は必須です"}
         
-        self.db.session.
-            
+        try:
+            tags = Tag.query.filter_by(community_id=community_id).filter_by(date=date).all()    
+            return  {"data": tags, "result": True, "message": "タグの検索に成功しました"}
+        except Exception as e:
+            self.db.session.rollback()
+            return {"result": False, "message": f"タグの検索に失敗しました: {str(e)}"}
         
-    def tag_data_save(self, tag_id, tag_name):
+
+    def tag_delete(self, tag_id):
         """
-        M2 カレンダー情報管理主処理 - タグ追加
+        M3 タグ削除要求
 
         Args:
             tag_id (str): タグID
-            tag_name (str): 表示名
 
         Returns:
             dict: 処理結果 (`result: bool`, `message: str`)
         """
-        if not tag_id or not tag_name:
+        if not tag_id:
             return {"result": False, "message": "タグIDと表示名は必須です。"}
 
+        try:
+            # tag_idが一致するものを削除
+            tag_to_delete = self.db.session.query(Tag).filter_by(id=tag_id).first()
+
+            if not tag_to_delete:
+                return {"result": False, "message": f"タグID '{tag_id}' に一致するタグが見つかりません。"}
+
+            self.db.session.delete(tag_to_delete)
+            self.db.session.commit()
+            return {"result": True, "message": f"タグ 'ID: {tag_id} が削除されました。"}
+        except Exception as e:
+            self.db.session.rollback()
+            return {"result": False, "message": f"タグの削除に失敗しました: {str(e)}"}
+
+        
+    def tag_data_save(self, tag_id, tag_name, tag_color, submitter_id, community_id, date):
+        """
+        M4 タグ投稿データ保存要求
+
+        Args:
+            tag_id (str): タグID
+            tag_name (str): 表示名
+            tag_color (str): タグのカラーコード
+            submitter_id (str): タグ登録者のID
+            community_id (str): コミュニティID
+            date (str): 日付
+
+        Returns:
+            dict: 処理結果 (`result: bool`, `message: str`)
+        """
+        if not tag_id:
+            return {"result": False, "message": "tag_id が未指定です"}
+        if not tag_name:
+            return {"result": False, "message": "tag_name が未指定です"}
+        if not tag_color:
+            return {"result": False, "message": "tag_color が未指定です"}
+        if not submitter_id:
+            return {"result": False, "message": "submitter_id が未指定です"}
+        if not community_id:
+            return {"result": False, "message": "community_id が未指定です"}
+        if not date:
+            return {"result": False, "message": "date が未指定です"}
+
         # 重複チェック (nameだけでなくidもチェックする方が安全)
-        if self.db.session.query(Tag).filter((Tag.id == tag_id) | (Tag.name == tag_name)).first():
-            return {"result": False, "message": f"タグID '{tag_id}' または表示名 '{tag_name}' は既に存在します。"}
+        if self.db.session.query(Tag).filter((Tag.date == date) & (Tag.submitter_id == submitter_id) & (Tag.name == tag_name)).first():
+            return {"result": False, "message": "指定された日付、登録者のタグは"}
 
         try:
-            new_tag = Tag(id=tag_id, name=tag_name)
+            new_tag = Tag(id=tag_id, name=tag_name, color=tag_color, submitter_id=submitter_id, community_id=community_id, date=date)
             self.db.session.add(new_tag)
             self.db.session.commit()
             return {"result": True, "message": f"タグ '{tag_name}' (ID: {tag_id}) が追加されました。", "tag": {"id": new_tag.id, "name": new_tag.name}}
         except Exception as e:
             self.db.session.rollback()
             return {"result": False, "message": f"タグの追加に失敗しました: {str(e)}"}
-
-    def tag_delete(self, tag_id, tag_name):
-        """
-        M1 カレンダー情報管理主処理 - タグ削除
-
-        Args:
-            tag_id (str): タグID
-            tag_name (str): 表示名
-
-        Returns:
-            dict: 処理結果 (`result: bool`, `message: str`)
-        """
-        if not tag_id or not tag_name:
-            return {"result": False, "message": "タグIDと表示名は必須です。"}
-
-        try:
-            # tag_id と tag_name の両方が一致するものを削除
-            tag_to_delete = self.db.session.query(Tag).filter_by(id=tag_id, name=tag_name).first()
-
-            if not tag_to_delete:
-                return {"result": False, "message": f"タグID '{tag_id}' と表示名 '{tag_name}' に一致するタグが見つかりません。"}
-
-            self.db.session.delete(tag_to_delete)
-            self.db.session.commit()
-            return {"result": True, "message": f"タグ '{tag_name}' (ID: {tag_id}) が削除されました。"}
-        except Exception as e:
-            self.db.session.rollback()
-            return {"result": False, "message": f"タグの削除に失敗しました: {str(e)}"}
-
-    def tag_edit(self, tag_id, new_tag_name):
-        """
-        M1 カレンダー情報管理主処理 - タグ編集
-
-        Args:
-            tag_id (str): 編集するタグのID
-            new_tag_name (str): 新しい表示名
-
-        Returns:
-            dict: 処理結果 (`result: bool`, `message: str`)
-        """
-        if not tag_id or not new_tag_name:
-            return {"result": False, "message": "タグIDと新しい表示名は必須です。"}
-
-        try:
-            tag_to_edit = self.db.session.query(Tag).filter_by(id=tag_id).first()
-
-            if not tag_to_edit:
-                return {"result": False, "message": f"タグID '{tag_id}' に一致するタグが見つかりません。"}
-
-            # 新しい表示名が既存の他のタグの名前と重複しないかチェック
-            if self.db.session.query(Tag).filter(Tag.name == new_tag_name, Tag.id != tag_id).first():
-                return {"result": False, "message": f"表示名 '{new_tag_name}' は既に他のタグで使用されています。"}
-
-            tag_to_edit.name = new_tag_name
-            self.db.session.commit()
-            return {"result": True, "message": f"タグID '{tag_id}' の表示名が '{new_tag_name}' に更新されました。", "tag": {"id": tag_to_edit.id, "name": tag_to_edit.name}}
-        except Exception as e:
-            self.db.session.rollback()
-            return {"result": False, "message": f"タグの編集に失敗しました: {str(e)}"}
-
-    def get_all_tags(self):
-        """
-        M1 カレンダー情報管理主処理 - 全タグ取得
-
-        Returns:
-            dict: 処理結果 (`result: bool`, `message: str`, `tags: list`)
-        """
-        try:
-            tags = self.db.session.query(Tag).all()
-            tag_list = [{"id": tag.id, "name": tag.name} for tag in tags]
-            return {"result": True, "message": "タグを正常に取得しました。", "tags": tag_list}
-        except Exception as e:
-            return {"result": False, "message": f"タグの取得に失敗しました: {str(e)}", "tags": []}
