@@ -1,7 +1,7 @@
 # C5 カレンダー情報処理部 CalenderProcessクラス 担当: 角田 一颯
 
 from flask import Blueprint, request, jsonify
-from .calendarprocess import CalenderProcess
+from .calendar_process import CalenderProcess
 
 calendar_bp = Blueprint('calendar', __name__, url_prefix='/api/<string:communityId>/calendar')
 processor = CalenderProcess()
