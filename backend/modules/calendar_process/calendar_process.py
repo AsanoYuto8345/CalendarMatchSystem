@@ -16,14 +16,16 @@ class CalenderProcess:
         """
         self.base_url = base_url
 
-    def tag_add(self, tag_name, tag_color, community_id):
+    def tag_add(self, tag_name, tag_color, submitter_id, community_id, date):
         """
         M2 タグ追加処理（C10管理部に追加要求）
 
         Args:
             tag_name (str): 表示名
             tag_color (str): タグのカラーコード
+            submmiter_id (str): 登録者のID
             community_id (str): コミュニティID
+            date (Date): 対象の日付
 
         Returns:
             tuple[bool, dict]: (成功可否, 管理部からの応答内容)
@@ -39,7 +41,9 @@ class CalenderProcess:
                     "tag_id": tag_id,
                     "tag_name": tag_name,
                     "tag_color": tag_color,
-                    "comunity_id": community_id
+                    "submitter_id": submitter_id,
+                    "community_id": community_id,
+                    "date": date
                     }
             )
             if response.status_code == 200:
