@@ -1,3 +1,4 @@
+#backend/modules/community_service/community_service.py
 """
 C4 コミュニティ処理部クラス定義
 本モジュールは、コミュニティの作成・参加・脱退・テンプレートタグ処理などを担当する。
@@ -6,6 +7,7 @@ C4 コミュニティ処理部クラス定義
 """
 
 import logging
+import re
 from flask import request, jsonify
 from werkzeug.utils import secure_filename
 
@@ -99,7 +101,6 @@ class CommunityService:
         if not user_id or not community_id:
             return jsonify({"error": "ID未入力です"}), 400
 
-        # 実際の参加情報管理は未実装
         return jsonify({
             "result": True,
             "message": f"ユーザ '{user_id}' はコミュニティ {community_id} を脱退しました"
@@ -123,12 +124,17 @@ class CommunityService:
 
         if method == 'POST':
             tag_value = data.get("tag", "").strip()
+            color_code = data.get("colorCode", "#000000").strip()
+
             if not tag_value:
                 return jsonify({"error": "タグ内容が未指定です"}), 400
 
+            if not re.fullmatch(r"^#[0-9a-fA-F]{6}$", color_code):
+                color_code = "#000000"
+
             db.execute(
-                "INSERT INTO template_tags (community_id, tag) VALUES (?, ?)",
-                (int(community_id), tag_value)
+                "INSERT INTO template_tags (community_id, tag, color_code) VALUES (?, ?, ?)",
+                (int(community_id), tag_value, color_code)
             )
             db.commit()
 
@@ -137,6 +143,7 @@ class CommunityService:
             return jsonify({
                 "message": "タグを追加しました",
                 "template_tag_id": new_id,
+                "color_code": color_code,
                 "result": True
             }), 201
 
@@ -146,18 +153,24 @@ class CommunityService:
 
         if method == 'PUT':
             tag_value = data.get("tag", "").strip()
+            color_code = data.get("colorCode", "#000000").strip()
+
             if not tag_value:
                 return jsonify({"error": "タグ内容が未指定です"}), 400
 
+            if not re.fullmatch(r"^#[0-9a-fA-F]{6}$", color_code):
+                color_code = "#000000"
+
             db.execute(
-                "UPDATE template_tags SET tag = ? WHERE id = ? AND community_id = ?",
-                (tag_value, int(tag_id), int(community_id))
+                "UPDATE template_tags SET tag = ?, color_code = ? WHERE id = ? AND community_id = ?",
+                (tag_value, color_code, int(tag_id), int(community_id))
             )
             db.commit()
 
             return jsonify({
                 "message": "タグを更新しました",
                 "template_tag_id": int(tag_id),
+                "color_code": color_code,
                 "result": True
             }), 200
 
@@ -189,10 +202,13 @@ class CommunityService:
 
         db = get_db()
         rows = db.execute(
-            "SELECT id, tag FROM template_tags WHERE community_id = ?",
+            "SELECT id, tag, color_code FROM template_tags WHERE community_id = ?",
             (int(community_id),)
         ).fetchall()
 
-        tag_list = [{"id": row["id"], "tag": row["tag"]} for row in rows]
+        tag_list = [
+            {"id": row["id"], "tag": row["tag"], "color_code": row["color_code"] or "#000000"}
+            for row in rows
+        ]
 
         return jsonify({"tags": tag_list}), 200
