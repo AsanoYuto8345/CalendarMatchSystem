@@ -7,8 +7,7 @@ calendar_bp = Blueprint('calendar', __name__, url_prefix='/api/<string:community
 processor = CalenderProcess()
 
 @calendar_bp.route('/tag/add', methods=['POST'])
-def add_tag():
-    community_id = request.view_args.get('community_id')
+def add_tag(community_id):
     data = request.get_json() or {}
 
     tag_name     = data.get("tag_name")
@@ -32,7 +31,7 @@ def add_tag():
     return (jsonify(result), 200) if success else (jsonify(result), 400)
 
 @calendar_bp.route('/tag/delete', methods=['DELETE'])
-def delete_tag():
+def delete_tag(community_id):
     data = request.get_json()
     tag_id = data.get("tag_id")
 
@@ -43,8 +42,7 @@ def delete_tag():
     return (jsonify(result), 200) if success else (jsonify(result), 404)
 
 @calendar_bp.route('/tag/get', methods=['GET'])
-def get_community_date_tag():
-    community_id = request.view_args.get('community_id')
+def get_community_date_tag(community_id):
     data = request.get_json()
     date = data.get("date")
     

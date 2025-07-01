@@ -38,7 +38,7 @@ class CalenderProcess:
             response = requests.post(
                 f"{self.base_url}/tag/add",
                 json={
-                    "tag_id": tag_id,
+                    "tag_id": str(tag_id),
                     "tag_name": tag_name,
                     "tag_color": tag_color,
                     "submitter_id": submitter_id,
@@ -83,13 +83,13 @@ class CalenderProcess:
         
         Args:
             community_id (str): コミュニティID
-            date (date)
+            date (str)
         Returns:
             tuple[bool, dict]: (成功可否, 管理部からの応答内容)
         """
         try:
             response = requests.get(
-                f"{self.base_url}/find/community/date",
+                f"{self.base_url}/tags",
                 json={
                     "community_id": community_id,
                     "date": date
