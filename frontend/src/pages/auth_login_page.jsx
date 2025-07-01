@@ -25,12 +25,17 @@ const AuthLoginPage = () => {
 
     axios.post(`${process.env.REACT_APP_API_SERVER_URL}/api/auth/login`, {
       email,
-      password
+      pw: password // バックエンド側が pw を期待しているならここを pw にする
     })
       .then((res) => {
-        // ユーザー情報を Cookie に保存（例: userId, token など）
-        Cookies.set('userId', res.data.user_id);
-        // トップページなどへ遷移
+        // サーバーからのレスポンスに sid を期待
+        const sid = res.data.sid;
+        Cookies.set('sid', sid);
+
+        // 必要なら userId なども保存（将来的に）
+        // Cookies.set('userId', res.data.user_id);
+
+        // トップページへ遷移
         navigate('/calendar');
       })
       .catch((err) => {

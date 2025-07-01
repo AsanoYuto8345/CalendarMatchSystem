@@ -1,70 +1,83 @@
 /**
- * サインアップ画面UI
+ * サインアップ画面UIコンポーネント
  * 作成者: 石田めぐみ
  */
 
-import React from "react";
+import React from 'react';
 
-const SignupUI = () => {
+/**
+ * SignUpUI
+ * - サインアップ用フォーム
+ * - ユーザ情報（メール、パスワード、表示名、アイコン画像）と送信ボタン
+ *
+ * @param {Function} onSubmitClick - サインアップ実行処理
+ * @param {string} msg - 結果メッセージの表示
+ */
+const SignupUI = ({ onSubmitClick, msg }) => {
   return (
-    <div className="max-w-md mx-auto p-6 bg-white rounded-lg shadow-md">
-      <h2 className="text-2xl font-semibold mb-6">サインアップ</h2>
+    <div className="max-w-md mx-auto mt-16 p-6 bg-white shadow-lg rounded-lg">
+      <h2 className="text-2xl font-bold text-center mb-4">サインアップ</h2>
 
-      {/* メールアドレス */}
       <div className="mb-4">
-        <label className="block text-sm font-medium mb-1">メールアドレス</label>
+        {/* メールアドレスの修正: htmlForとidを追加 */}
+        <label htmlFor="email" className="block text-sm font-medium mb-1">メールアドレス</label>
         <input
-          type="text"
+          type="email"
           name="email"
-          className="w-full border rounded px-3 py-2 text-sm focus:outline-none focus:ring focus:border-blue-300"
-          placeholder="メールアドレスを入力"
+          id="email" // ★ここを追加
+          className="w-full px-3 py-2 border border-gray-300 rounded"
+          placeholder="example@example.com"
         />
-        <small className="text-xs text-gray-500">半角英数（50文字以内）</small>
+        <small className="text-gray-500">半角英数（50文字以内）</small>
       </div>
 
-      {/* パスワード */}
       <div className="mb-4">
-        <label className="block text-sm font-medium mb-1">パスワード</label>
+        {/* パスワードの修正: htmlForとidを追加 */}
+        <label htmlFor="password" className="block text-sm font-medium mb-1">パスワード</label>
         <input
           type="password"
-          name="pw"
-          className="w-full border rounded px-3 py-2 text-sm focus:outline-none focus:ring focus:border-blue-300"
-          placeholder="パスワードを入力"
+          name="password"
+          id="password" // ★ここを追加
+          className="w-full px-3 py-2 border border-gray-300 rounded"
+          placeholder="パスワード"
         />
-        <small className="text-xs text-gray-500">半角英数（20文字以内）</small>
+        <small className="text-gray-500">半角英数（20文字以内）</small>
       </div>
 
-      {/* 表示名 */}
       <div className="mb-4">
-        <label className="block text-sm font-medium mb-1">表示名</label>
+        {/* 表示名の修正: htmlForとidを追加 */}
+        <label htmlFor="displayName" className="block text-sm font-medium mb-1">表示名</label>
         <input
           type="text"
-          name="name"
-          className="w-full border rounded px-3 py-2 text-sm focus:outline-none focus:ring focus:border-blue-300"
-          placeholder="表示名を入力"
+          name="display_name"
+          id="displayName" // ★ここを追加
+          className="w-full px-3 py-2 border border-gray-300 rounded"
+          placeholder="表示名"
         />
-        <small className="text-xs text-gray-500">半角英数（20文字以内）</small>
+        <small className="text-gray-500">半角英数（20文字以内）</small>
       </div>
 
-      {/* アイコン画像 */}
       <div className="mb-6">
-        <label className="block text-sm font-medium mb-1">アイコン画像</label>
+        {/* アイコン画像の修正: htmlForとidを追加 */}
+        <label htmlFor="iconFile" className="block text-sm font-medium mb-1">アイコン画像</label>
         <input
           type="file"
-          name="icon_name"
+          name="icon_file"
+          id="iconFile" // ★ここを追加
           accept="image/*"
-          className="text-sm"
+          className="block w-full"
         />
-        <small className="text-xs text-gray-500">画像データ（サイズ制限あり）</small>
+        <small className="text-gray-500">画像ファイルを選択してください</small>
       </div>
 
-      {/* サインアップボタン */}
       <button
-        type="submit"
-        className="w-full bg-blue-600 text-white py-2 px-4 rounded hover:bg-blue-700 transition"
+        className="w-full bg-green-600 hover:bg-green-700 text-white py-2 rounded"
+        onClick={onSubmitClick}
       >
         サインアップ
       </button>
+
+      {msg && <div className="mt-4 text-center text-sm text-red-500">{msg}</div>}
     </div>
   );
 };
