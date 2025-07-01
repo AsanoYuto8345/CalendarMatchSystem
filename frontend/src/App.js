@@ -2,6 +2,7 @@
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 
 import Home from "./pages/Home";
+import AppLayout from "./layouts/AppLayout";
 import LoginUI from "./components/LoginUI";
 import { AuthRoutes } from "./routes/AuthRoutes";
 import { UserRoutes } from "./routes/UserRoutes";

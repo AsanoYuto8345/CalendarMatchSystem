@@ -1,4 +1,3 @@
-#backend/modules/community_service/route.py
 """
 C4 コミュニティ処理部のルーティング
 各URLエンドポイントに対して、CommunityService クラスの対応メソッドを呼び出す。
@@ -69,3 +68,14 @@ def get_tags():
         Response: テンプレートタグ一覧（成功時200）
     """
     return service.get_tags()
+
+
+@community_bp.route("/joined", methods=["GET"])
+def get_joined_communities():
+    """
+    M25: 所属コミュニティ一覧取得処理
+
+    Returns:
+        Response: ユーザーが所属するコミュニティ一覧（成功時200, エラー400）
+    """
+    return service.get_joined_communities()
