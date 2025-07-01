@@ -3,10 +3,14 @@
 import { Route } from 'react-router-dom';
 import CommunityLeavePage from '../pages/community_leave_page';
 import TemplateTagViewPage from '../pages/community_template_tag_view_page';
+import TemplateTagEditPage from '../pages/community_template_tag_edit_page';
+import TemplateTagCreatePage from '../pages/community_template_tag_create_page';
 
 export const CommunityRoutes = (
   <>
     <Route path="community/:communityId/leave" element={<CommunityLeavePage />} />
     <Route path="community/:communityId/template_tag/view" element={<TemplateTagViewPage />} />
+    <Route path="community/:communityId/calendar/template_tag/:tagId/edit" element={<TemplateTagEditPage />} />
+    <Route path="community/:communityId/calendar/template_tag/create" element={<TemplateTagCreatePage />} />
   </>
 );
