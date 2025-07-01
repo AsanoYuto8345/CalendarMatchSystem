@@ -1,7 +1,5 @@
 // M11 カレンダー画面コンポーネント 担当: 角田一颯
 
-import React from 'react';
-
 const CalendarView = ({
   events = [],
   onDateClick,
