@@ -1,3 +1,4 @@
+# backend/modules/community_management/community_management.py
 """
 C9 コミュニティ情報管理部
 このモジュールは SQLite データベースを用いてコミュニティ情報を永続的に管理します。
@@ -7,6 +8,7 @@ import logging
 from flask import request, jsonify, g
 import sqlite3
 import os
+import re
 
 logger = logging.getLogger(__name__)
 
@@ -53,6 +55,7 @@ def init_db():
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             community_id INTEGER NOT NULL,
             tag TEXT NOT NULL,
+            color_code TEXT NOT NULL,
             FOREIGN KEY (community_id) REFERENCES communities(id)
         )
     """)
@@ -68,21 +71,11 @@ class CommunityManagement:
     """
     C9 コミュニティ情報管理部 管理クラス
     - M2: コミュニティ登録処理
-    - M3: コミュニティ情報更新処理（仮実装）
+    - M3: コミュニティ情報更新処理 
     - M4: コミュニティ情報取得処理
     """
 
     def register(self, name, image=None):
-        """
-        M2: コミュニティ登録処理
-
-        Args:
-            name (str): コミュニティ名（16文字以内）
-            image (FileStorage, optional): 画像ファイル（未使用）
-
-        Returns:
-            Response: 成功時201, 入力エラー400, 重複409
-        """
         if not name:
             return jsonify({"error": "コミュニティ名が未入力です"}), 400
         if len(name) > 16:
@@ -108,21 +101,6 @@ class CommunityManagement:
         }), 201
 
     def getcommunityInfo(self):
-        """
-        M4: コミュニティ情報取得処理
-
-        Returns:
-            Response:
-                - 成功時200:
-                    {
-                        "result": True,
-                        "community_name": str,
-                        "image_path": str or None,
-                        "tags": List[str]
-                    }
-                - 入力エラー400
-                - 存在しないID 404
-        """
         community_id = request.args.get("community_id", "").strip()
 
         if not community_id.isdigit():
@@ -138,10 +116,10 @@ class CommunityManagement:
             return jsonify({"error": f"ID {community_id} のコミュニティは存在しません"}), 404
 
         tag_rows = db.execute(
-            "SELECT tag FROM template_tags WHERE community_id = ?",
+            "SELECT tag, color_code FROM template_tags WHERE community_id = ?",
             (int(community_id),)
         ).fetchall()
-        tag_list = [r["tag"] for r in tag_rows]
+        tag_list = [{"tag": r["tag"], "colorCode": r["color_code"]} for r in tag_rows]
 
         return jsonify({
             "result": True,
@@ -151,23 +129,73 @@ class CommunityManagement:
         }), 200
 
     def updatecommunityInfo(self):
-        """
-        M3: コミュニティ情報更新処理
-        ※ 名前や画像の更新は行わない仕様
-
-        Returns:
-            Response:
-                - 成功時200: 更新成功メッセージを返却
-                - 入力エラー400
-        """
         data = request.get_json() or {}
-        community_id = data.get("community_id", "").strip()
+        community_id_str = data.get("community_id", "").strip()
+        tags = data.get("tags", [])
 
-        if not community_id.isdigit():
+        if not community_id_str.isdigit():
             return jsonify({"error": "無効なコミュニティIDです"}), 400
+        community_id = int(community_id_str)
+        db = get_db()
 
-        logger.info(f"📦 更新要求: community_id={community_id}")
+        community_exists = db.execute(
+            "SELECT id FROM communities WHERE id = ?", (community_id,)
+        ).fetchone()
+        if not community_exists:
+            return jsonify({"error": f"ID {community_id} のコミュニティは存在しません"}), 404
+
+        current_tags_rows = db.execute(
+            "SELECT id, tag FROM template_tags WHERE community_id = ?",
+            (community_id,)
+        ).fetchall()
+        current_tags = {row["id"]: row["tag"] for row in current_tags_rows}
+
+        updated_tags_list = []
+
+        for tag_data in tags:
+            tag_id = tag_data.get("id")
+            tag_name = tag_data.get("tag", "").strip()
+            color_code = tag_data.get("colorCode", "#000000").strip()
+
+            if not tag_name:
+                return jsonify({"error": "タグ名が未入力です"}), 400
+            if len(tag_name) > 20:
+                return jsonify({"error": "タグは20文字以内にしてください"}), 400
+            if not re.fullmatch(r"^#[0-9a-fA-F]{6}$", color_code):
+                color_code = "#000000"
+
+            if tag_id and tag_id in current_tags:
+                if current_tags[tag_id] != tag_name:
+                    db.execute(
+                        "UPDATE template_tags SET tag = ?, color_code = ? WHERE id = ? AND community_id = ?",
+                        (tag_name, color_code, tag_id, community_id)
+                    )
+                    logger.info(f"✅ タグ更新: ID={tag_id}, Name='{tag_name}'")
+                updated_tags_list.append({"id": tag_id, "tag": tag_name, "colorCode": color_code})
+                del current_tags[tag_id]
+            else:
+                try:
+                    cursor = db.execute(
+                        "INSERT INTO template_tags (community_id, tag, color_code) VALUES (?, ?, ?)",
+                        (community_id, tag_name, color_code)
+                    )
+                    new_id = cursor.lastrowid
+                    updated_tags_list.append({"id": new_id, "tag": tag_name, "colorCode": color_code})
+                    logger.info(f"✅ 新規タグ追加: ID={new_id}, Name='{tag_name}'")
+                except sqlite3.IntegrityError:
+                    return jsonify({"error": f"タグ '{tag_name}' は既に存在します"}), 409
+
+        for tag_id_to_delete in current_tags.keys():
+            db.execute(
+                "DELETE FROM template_tags WHERE id = ? AND community_id = ?",
+                (tag_id_to_delete, community_id)
+            )
+            logger.info(f"✅ タグ削除: ID={tag_id_to_delete}")
+
+        db.commit()
+
         return jsonify({
             "result": True,
-            "message": "コミュニティ情報を更新しました"
+            "message": "コミュニティ情報を更新しました",
+            "updated_tags": updated_tags_list
         }), 200
