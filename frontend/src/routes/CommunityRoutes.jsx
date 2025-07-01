@@ -8,6 +8,10 @@ import TemplateTagEditPage from '../pages/community_template_tag_edit_page';
 import TemplateTagCreatePage from '../pages/community_template_tag_create_page';
 import CommunityCreatePage from '../pages/community_create_page'
 import CommunityJoinPage from '../pages/community_join_page' 
+import TagPostPage from '../pages/community_calendar_tag_post_page';
+import TagPostCompleteMessagePage from '../pages/community_calendar_tag_post_complete_page';
+import TagEditPage from '../pages/community_calendar_tag_edit_page';
+import TagEditCompleteMesaagePage from '../pages/community_calendar_tag_edit_complete_page';
 
 export const CommunityRoutes = (
   <>
@@ -17,5 +21,9 @@ export const CommunityRoutes = (
     <Route path="community/:communityId/calendar/template_tag/create" element={<TemplateTagCreatePage />} />
     <Route path="/community/create" element={<CommunityCreatePage />} />
     <Route path="/community/join" element={<CommunityJoinPage />} />
+    <Route path="community/:communityId/calendar/:date/tags/post" element={<TagPostPage />} />
+    <Route path="community/:communityId/calendar/:date/tags/post/complate" element={<TagPostCompleteMessagePage />} />
+    <Route path="community/:communityId/calendar/:date/tags/edit" element={<TagEditPage />} />
+    <Route path="community/:communityId/calendar/:date/tags/edit/complate" element={<TagEditCompleteMesaagePage />} />
   </>
 )
