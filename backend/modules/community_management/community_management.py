@@ -1,61 +1,164 @@
-# modules/community_management/community_management.py
-
 """
 C9 コミュニティ情報管理部
-このモジュールは疑似メモリでコミュニティ情報を管理します。
-Flaskアプリケーションが再起動されるとデータは失われます。
-将来的には SQLAlchemy 等の DB 永続化に差し替えることを想定しています。
+このモジュールは SQLite データベースを用いてコミュニティ情報を永続的に管理します。
 """
 
 import logging
-from flask import request, jsonify
+from flask import request, jsonify, g
+import sqlite3
+import os
 
 logger = logging.getLogger(__name__)
 
+# SQLite ファイルのパス
+DB_PATH = os.path.join(os.path.dirname(__file__), "../../instance/messages.db")
+
+
+def get_db():
+    """
+    SQLite 接続を取得する（Flask の g オブジェクトにバインド）
+
+    Returns:
+        sqlite3.Connection: データベース接続
+    """
+    if 'db' not in g:
+        g.db = sqlite3.connect(DB_PATH)
+        g.db.row_factory = sqlite3.Row
+    return g.db
+
+
+def close_db(e=None):
+    """
+    SQLite 接続をクローズする
+    """
+    db = g.pop('db', None)
+    if db is not None:
+        db.close()
+
+
+def init_db():
+    """
+    SQLite データベース初期化（テーブルがなければ作成）
+    """
+    db = sqlite3.connect(DB_PATH)
+    db.execute("""
+        CREATE TABLE IF NOT EXISTS communities (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            name TEXT UNIQUE NOT NULL,
+            image_path TEXT
+        )
+    """)
+    db.execute("""
+        CREATE TABLE IF NOT EXISTS template_tags (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            community_id INTEGER NOT NULL,
+            tag TEXT NOT NULL,
+            FOREIGN KEY (community_id) REFERENCES communities(id)
+        )
+    """)
+    db.commit()
+    db.close()
+
+
+# 初期化呼び出し
+init_db()
+
+
 class CommunityManagement:
-    def __init__(self):
-        # 疑似的な記憶領域（再起動すると消える）
-        self._communities = []
+    """
+    C9 コミュニティ情報管理部 管理クラス
+    - M2: コミュニティ登録処理
+    - M3: コミュニティ情報更新処理（仮実装）
+    - M4: コミュニティ情報取得処理
+    """
 
     def register(self, name, image=None):
         """
-        M3: コミュニティ登録処理
-        重複チェックを行い、コミュニティを疑似メモリに登録する。
+        M2: コミュニティ登録処理
+
+        Args:
+            name (str): コミュニティ名（16文字以内）
+            image (FileStorage, optional): 画像ファイル（未使用）
+
+        Returns:
+            Response: 成功時201, 入力エラー400, 重複409
         """
-        if name in self._communities:
+        if not name:
+            return jsonify({"error": "コミュニティ名が未入力です"}), 400
+        if len(name) > 16:
+            return jsonify({"error": "16文字以内にしてください"}), 400
+
+        db = get_db()
+        try:
+            db.execute("INSERT INTO communities (name) VALUES (?)", (name,))
+            db.commit()
+        except sqlite3.IntegrityError:
             return jsonify({"error": "既に存在します"}), 409
 
-        self._communities.append(name)
+        community_id = db.execute(
+            "SELECT id FROM communities WHERE name = ?", (name,)
+        ).fetchone()["id"]
+
         logger.info(f"✅ コミュニティ登録: {name}")
         return jsonify({
             "result": True,
             "message": f"'{name}' を登録しました",
             "community_name": name,
-            "community_id": self._communities.index(name) + 1
+            "community_id": community_id
         }), 201
-
-    def exists_by_name(self, name):
-        """
-        指定された名前のコミュニティが存在するか確認する。
-        """
-        return name in self._communities
 
     def getcommunityInfo(self):
         """
         M4: コミュニティ情報取得処理
-        指定されたIDのコミュニティ情報を返却（現状は未実装）。
+
+        Returns:
+            Response:
+                - 成功時200:
+                    {
+                        "result": True,
+                        "community_name": str,
+                        "image_path": str or None,
+                        "tags": List[str]
+                    }
+                - 入力エラー400
+                - 存在しないID 404
         """
         community_id = request.args.get("community_id", "").strip()
+
         if not community_id.isdigit():
             return jsonify({"error": "コミュニティIDが未指定または不正です"}), 400
 
-        # ※本実装では ID に対応する情報は存在しないためエラーで返す
-        return jsonify({"error": f"ID {community_id} のコミュニティは存在しません"}), 404
+        db = get_db()
+        row = db.execute(
+            "SELECT name, image_path FROM communities WHERE id = ?",
+            (int(community_id),)
+        ).fetchone()
+
+        if not row:
+            return jsonify({"error": f"ID {community_id} のコミュニティは存在しません"}), 404
+
+        tag_rows = db.execute(
+            "SELECT tag FROM template_tags WHERE community_id = ?",
+            (int(community_id),)
+        ).fetchall()
+        tag_list = [r["tag"] for r in tag_rows]
+
+        return jsonify({
+            "result": True,
+            "community_name": row["name"],
+            "image_path": row["image_path"],
+            "tags": tag_list
+        }), 200
 
     def updatecommunityInfo(self):
         """
-        M5: コミュニティ情報更新処理（未実装）
-        指定されたIDの情報を更新する処理を想定。
+        M3: コミュニティ情報更新処理
+        ※ 名前や画像の更新は行わない仕様
+
+        Returns:
+            Response:
+                - 成功時200: 更新成功メッセージを返却
+                - 入力エラー400
         """
         data = request.get_json() or {}
         community_id = data.get("community_id", "").strip()
@@ -64,4 +167,7 @@ class CommunityManagement:
             return jsonify({"error": "無効なコミュニティIDです"}), 400
 
         logger.info(f"📦 更新要求: community_id={community_id}")
-        return jsonify({"result": True, "message": "コミュニティ情報を更新しました"}), 200
+        return jsonify({
+            "result": True,
+            "message": "コミュニティ情報を更新しました"
+        }), 200
