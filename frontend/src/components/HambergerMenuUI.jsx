@@ -1,3 +1,9 @@
+/**
+ * ハンバーガメニューUIコンポーネント
+ * ハンバーガーメニュー表示/非表示
+ * 作成者: 石田めぐみ
+ */
+
 import React, { useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 
