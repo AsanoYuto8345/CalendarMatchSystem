@@ -1,7 +1,6 @@
 from flask import Flask, jsonify
 from flask_cors import CORS
 from flask_sqlalchemy import SQLAlchemy
-from database.models.community import community_bp
 
 app = Flask(__name__)
 CORS(app)
@@ -37,13 +36,9 @@ def get_messages():
     msgs = Message.query.all()
     return jsonify([{"id": m.id, "text": m.text} for m in msgs])
 
-# 仮置きのCalendarLeaveの動作確認ができるようになるためのルート
-@app.route("/api/community/<string:communityId>", methods=["GET"])
-def get_community_name(communityId):
-    return jsonify({"community_name": "仮コミュニティ名", "communityId": communityId})
 # Blueprint 登録
-app.register_blueprint(community_bp)
+from modules.community_service.route import community_bp
+app.register_blueprint(community_bp, url_prefix="/api")
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5001)
-
