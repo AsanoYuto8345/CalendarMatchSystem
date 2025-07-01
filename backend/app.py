@@ -43,4 +43,4 @@ app.register_blueprint(community_service_bp, url_prefix="/api/community")
 app.register_blueprint(community_management_bp, url_prefix="/api/community/manage")
 
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=5001)
+    app.run(host="0.0.0.0", port=5001, debug=True)
