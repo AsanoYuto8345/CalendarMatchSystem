@@ -2,6 +2,7 @@
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 
 import Home from "./pages/Home";
+import LoginUI from "./components/LoginUI";
 import { AuthRoutes } from "./routes/AuthRoutes";
 import { UserRoutes } from "./routes/UserRoutes";
 import { CommunityRoutes } from "./routes/CommunityRoutes";
@@ -15,7 +16,7 @@ export default function App() {
       <Routes>
         {/* ホーム画面 (メッセージ一覧) */}
         <Route path="/" element={<Home />} />
-
+        
         {/* 各機能用のルーティング */}
         {AuthRoutes}
         {UserRoutes}
