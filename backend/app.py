@@ -35,11 +35,7 @@ def init_db():
                 db.session.commit()
         db_initialized = True
 
-# Blueprint の登録
-from modules.calendar_manager.route import calendar_manager_bp
-app.register_blueprint(calendar_manager_bp)
-from modules.calendar_process.route import calendar_bp
-app.register_blueprint(calendar_bp)
+
 
 @app.route("/api/messages")
 def get_messages():
@@ -50,11 +46,19 @@ from modules.community_service.route import community_bp as community_service_bp
 from modules.community_management.route import management_bp as community_management_bp
 from modules.user_data_process.route import user_data_bp
 from modules.user_data_management.route import user_bp
+from modules.calendar_process.route import calendar_bp
+from modules.calendar_manager.route import calendar_manager_bp
+from modules.Loginout.route import auth_bp
+# Blueprint の登録
 
+app.register_blueprint(auth_bp)
+app.register_blueprint(calendar_bp)
+app.register_blueprint(calendar_manager_bp)
 app.register_blueprint(community_service_bp, url_prefix="/api/community")
 app.register_blueprint(community_management_bp, url_prefix="/api/community/manage")
 app.register_blueprint(user_data_bp) # C3 ユーザ情報処理部のBlueprintを登録
 app.register_blueprint(user_bp)      # C8 ユーザ情報管理部のBlueprintを登録
+
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5001, debug=True)
