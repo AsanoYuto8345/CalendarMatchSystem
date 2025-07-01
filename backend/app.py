@@ -38,9 +38,12 @@ def get_messages():
 
 from modules.community_service.route import community_bp as community_service_bp
 from modules.community_management.route import management_bp as community_management_bp
+from modules.user_data_process.route import user_data_bp
 
 app.register_blueprint(community_service_bp, url_prefix="/api/community")
 app.register_blueprint(community_management_bp, url_prefix="/api/community/manage")
+app.register_blueprint(user_data_bp) # C3 ユーザ情報処理部のBlueprintを登録
+
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5001, debug=True)
