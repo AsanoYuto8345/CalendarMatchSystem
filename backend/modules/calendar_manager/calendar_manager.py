@@ -1,5 +1,35 @@
 # C10 カレンダー情報管理部 CalendarManagerクラス  担当: 角田 一颯, 浅野勇翔
-from ...database.models.tag import Tag
+from extentions import db
+
+class Tag(db.Model):
+    """
+    タグ情報を保持するデータベースモデル
+    messages.db に保存されます
+    """
+    __tablename__ = 'tags'
+    id           = db.Column(db.String(50),  unique=True, primary_key=True)
+    name         = db.Column(db.String(100), nullable=False)
+    color        = db.Column(db.String(6),   nullable=False)
+    submitter_id = db.Column(db.String(100), nullable=False)
+    community_id = db.Column(db.String(100), nullable=False)
+    date         = db.Column(db.String(100), nullable=False)
+
+    def __repr__(self):
+        return f"<Tag(id='{self.id}', name='{self.name}')>"
+    
+    def to_dict(self):
+        """
+        この Tag オブジェクトを JSON 化可能な dict に変換する
+        """
+        return {
+            "id":            self.id,
+            "name":          self.name,
+            "color":         self.color,
+            "submitter_id":  self.submitter_id,
+            "community_id":  self.community_id,
+            # date は文字列化して返す
+            "date": self.date
+        }
 
 class CalendarManager:
     """
@@ -28,12 +58,13 @@ class CalendarManager:
             dict: 処理結果 (data: List[Tag],`result: bool`, `message: str`)
         """
         
-        if not community_id or date:
+        if not community_id or not date:
             return {"result": False, "message": "コミュニティIDと日付は必須です"}
         
         try:
             tags = Tag.query.filter_by(community_id=community_id).filter_by(date=date).all()    
-            return  {"data": tags, "result": True, "message": "タグの検索に成功しました"}
+            serialized_tag = [tag.to_dict() for tag in tags]
+            return  {"data": serialized_tag, "result": True, "message": "タグの検索に成功しました"}
         except Exception as e:
             self.db.session.rollback()
             return {"result": False, "message": f"タグの検索に失敗しました: {str(e)}"}

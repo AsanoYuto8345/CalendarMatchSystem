@@ -2,8 +2,8 @@
 
 from flask import Blueprint, request, jsonify
 
-from app import db # app.pyからdbインスタンスをインポート
-from .calendar_manager import CalendarManager, Tag # CalendarManagerとTagモデルをインポート
+from extentions import db # app.pyからdbインスタンスをインポート
+from .calendar_manager import CalendarManager # CalendarManagerとTagモデルをインポート
 
 calendar_manager_bp = Blueprint('calendar_manager', __name__, url_prefix='/api/calendar-manager')
 # CalendarManagerインスタンスを初期化する際に、app.pyで初期化されたdbインスタンスを渡す
@@ -41,7 +41,7 @@ def manager_get_calendar_tags():
         return jsonify({"result": False, "message": "リクエストボディが空です。"}), 400
     
     community_id = data.get("community_id")
-    date = data.get()    
+    date = data.get("date")    
     
     if not community_id:
         return jsonify({"result": False, "message": "community_idが未指定です。"}), 400
@@ -49,7 +49,7 @@ def manager_get_calendar_tags():
     if not date:
         return jsonify({"result": False, "message": "dateが未指定です。"}), 400
     
-    result = manager.request_calendar_data()
+    result = manager.request_calendar_data(community_id, date)
     if result["result"]:
         return jsonify(result), 200
     else:
@@ -138,7 +138,7 @@ def manager_tag_save():
     if not date:
         return jsonify({"result": False, "message": "dateが未指定です。"}), 400
     
-    result = manager.tag_add(tag_id, tag_name, tag_color, submitter_id, community_id, date)
+    result = manager.tag_data_save(tag_id, tag_name, tag_color, submitter_id, community_id, date)
     if result["result"]:
         return jsonify(result), 200
     else:
