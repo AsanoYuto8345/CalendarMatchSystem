@@ -12,7 +12,7 @@ import TagPostPage from '../pages/community_calendar_tag_post_page';
 import TagPostCompleteMessagePage from '../pages/community_calendar_tag_post_complete_page';
 import TagEditPage from '../pages/community_calendar_tag_edit_page';
 import TagEditCompleteMesaagePage from '../pages/community_calendar_tag_edit_complete_page';
-
+import CommunityCalendarViewPage from '../pages/community_calendar_view_page';
 import CommunityCalendarTagViewPage from '../pages/community_calendar_tag_view_page'; // M22
 import CommunityTagChatPage from '../pages/community_tag_chat_page'; // M23
 import CommunityMemberListPage from '../pages/community_member_list_page'; // M24
@@ -35,6 +35,8 @@ export const CommunityRoutes = (
     <Route path="community/:communityId/tag/:tagId/chat" element={<CommunityTagChatPage />} />
     {/* M24 メンバー画面 */}
     <Route path="community/:communityId/members" element={<CommunityMemberListPage />} />
+    <Route path="community/:communityId/leave" element={<CommunityLeavePage />}/>
+    <Route path="community/:communityId/calendar/view" element={<CommunityCalendarViewPage/>}/>
   </>
 )
 
