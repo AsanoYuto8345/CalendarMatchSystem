@@ -12,8 +12,10 @@ class Matching:
         """
         
         
-    def find_matching(self, tag_id, commutniy_id, tag_name, date, id):
+    def find_matching(self, commutniy_id, tag_name, date, user_id):
         """
-            
+            community_id, tag_name, dateが一致し、登録者は一致しない投稿が存在するかどうかを確認する
         """        
+        
+        return 
         
