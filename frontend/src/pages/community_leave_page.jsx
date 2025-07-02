@@ -44,9 +44,9 @@ const CommunityLeavePage = () => {
   }
 
   useEffect(() => {
-    axios.get(`${process.env.REACT_APP_API_SERVER_URL}/api/community/${communityId}`)
+    axios.get(`${process.env.REACT_APP_API_SERVER_URL}/api/community/info?community_id=${communityId}`)
       .then(res => {
-        setCommunityName(res.data.community_name); 
+        setCommunityName(res.data.name); 
       })
       .catch(err => {
         console.error(err);
