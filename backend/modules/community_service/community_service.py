@@ -1,17 +1,22 @@
+# backend/modules/community_service/community_service.py
 """
 C4 コミュニティ処理部クラス定義
-本モジュールは、コミュニティの作成・参加・脱退・テンプレートタグ処理などを担当する。
+本モジュールは、コミュニティの作成・参加・脱退・テンプレートタグ処理、チャット処理などを担当する。
 作成者: 遠藤信輝
-最終更新: 2025/06/26
+最終更新: 2025/07/01
 """
 
 import logging
+import os
+import re
 from flask import request, jsonify
 from werkzeug.utils import secure_filename
 
 from modules.community_management.community_management import get_db
 
 logger = logging.getLogger(__name__)
+
+UPLOAD_ROOT = "uploads"
 
 
 class CommunityService:
@@ -21,10 +26,10 @@ class CommunityService:
 
     def create(self):
         """
-        コミュニティを新規作成する。
+        M2新しいコミュニティを作成し、必要に応じて画像ファイルを保存する。
 
         Returns:
-            Response: 成功時201, 入力エラー時400, 重複時409
+            JSONレスポンス（作成成功: 201, 入力エラー: 400, 重複: 409）
         """
         name = request.form.get("community_name", "").strip()
         if not name:
@@ -35,42 +40,51 @@ class CommunityService:
         image_file = request.files.get("image")
         image_path = None
 
-        if image_file and image_file.filename:
-            filename = secure_filename(image_file.filename)
-            image_path = f"uploads/{filename}"
-            image_file.save(image_path)
-            logger.info(f"🖼️ 画像保存: {image_path}")
-
         db = get_db()
         try:
-            db.execute(
-                "INSERT INTO communities (name, image_path) VALUES (?, ?)",
-                (name, image_path)
-            )
+            db.execute("INSERT INTO communities (name) VALUES (?)", (name,))
             db.commit()
+            community_id = db.execute(
+                "SELECT id FROM communities WHERE name = ?", (name,)
+            ).fetchone()["id"]
         except Exception as e:
             logger.warning(f"❌ コミュニティ作成失敗: {e}")
             return jsonify({"error": "既に存在します"}), 409
 
-        community_id = db.execute(
-            "SELECT id FROM communities WHERE name = ?", (name,)
-        ).fetchone()["id"]
+        if image_file and image_file.filename:
+            filename = secure_filename(image_file.filename)
+            community_folder = os.path.join(UPLOAD_ROOT, str(community_id))
+            os.makedirs(community_folder, exist_ok=True)
+            image_path = os.path.join(community_folder, filename)
+            image_file.save(image_path)
+            logger.info(f"🖼️ 画像保存: {image_path}")
+
+            db.execute(
+                "UPDATE communities SET image_path = ? WHERE id = ?",
+                (image_path, community_id)
+            )
+            db.commit()
 
         return jsonify({
             "result": True,
             "message": f"'{name}' を登録しました",
             "community_name": name,
-            "community_id": community_id
+            "community_id": community_id,
+            "image_path": image_path
         }), 201
 
     def join(self):
         """
-        指定されたコミュニティに参加する。
+        M3指定されたユーザを既存のコミュニティに参加させる。
 
         Returns:
-            Response: 成功時200, 不存在404
+            JSONレスポンス（参加成功: 200, 入力エラー: 400, 未存在: 404）
         """
         name = request.json.get("community_name", "").strip()
+        user_id = request.json.get("user_id", "").strip()
+        if not user_id:
+            return jsonify({"error": "ユーザーIDが未指定です"}), 400
+
         db = get_db()
         row = db.execute(
             "SELECT id FROM communities WHERE name = ?", (name,)
@@ -79,19 +93,62 @@ class CommunityService:
         if not row:
             return jsonify({"error": f"'{name}' は存在しません"}), 404
 
+        community_id = row["id"]
+
+        try:
+            db.execute(
+                "INSERT INTO members (user_id, community_id) VALUES (?, ?)",
+                (user_id, community_id)
+            )
+            db.commit()
+        except Exception as e:
+            logger.warning(f"❌ 参加処理失敗: {e}")
+            return jsonify({"error": "参加処理中にエラーが発生しました"}), 500
+
         return jsonify({
             "result": True,
             "message": f"'{name}' に参加しました",
             "community_name": name,
-            "community_id": row["id"]
+            "community_id": community_id
         }), 200
+
+    def get_joined_communities(self):
+        """
+        M9指定されたユーザが所属している全てのコミュニティ情報を取得する。
+
+        Returns:
+            JSONレスポンス（取得成功: 200, 入力エラー: 400）
+        """
+        user_id = request.args.get("user_id", "").strip()
+
+        if not user_id:
+            return jsonify({"error": "ユーザIDが未指定です"}), 400
+
+        db = get_db()
+        rows = db.execute("""
+            SELECT c.id, c.name, c.image_path
+            FROM communities c
+            INNER JOIN members m ON c.id = m.community_id
+            WHERE m.user_id = ?
+        """, (user_id,)).fetchall()
+
+        communities = [
+            {
+                "id": row["id"],
+                "name": row["name"],
+                "iconUrl": f"/{row['image_path']}" if row["image_path"] else "/icons/default.png"
+            }
+            for row in rows
+        ]
+
+        return jsonify({"communities": communities}), 200
 
     def leave(self):
         """
-        ユーザーを指定されたコミュニティから脱退させる（処理は仮実装）。
+        M4指定されたユーザをコミュニティから脱退させる。
 
         Returns:
-            Response: 成功時200, 入力エラー時400
+            JSONレスポンス（脱退成功: 200, 入力エラー: 400）
         """
         user_id = request.json.get("id", "").strip()
         community_id = request.json.get("community_id", "").strip()
@@ -99,7 +156,13 @@ class CommunityService:
         if not user_id or not community_id:
             return jsonify({"error": "ID未入力です"}), 400
 
-        # 実際の参加情報管理は未実装
+        db = get_db()
+        db.execute(
+            "DELETE FROM members WHERE user_id = ? AND community_id = ?",
+            (user_id, community_id)
+        )
+        db.commit()
+
         return jsonify({
             "result": True,
             "message": f"ユーザ '{user_id}' はコミュニティ {community_id} を脱退しました"
@@ -107,10 +170,10 @@ class CommunityService:
 
     def edit_tags(self):
         """
-        テンプレートタグを追加・更新・削除する。
+        M5テンプレートタグの追加・更新・削除を実行する。
 
         Returns:
-            Response: 操作に応じて201/200/400/404など
+            JSONレスポンス（成功時: 200/201, 入力エラー: 400, メソッド不正: 405）
         """
         method = request.method
         data = request.get_json() or {}
@@ -123,12 +186,17 @@ class CommunityService:
 
         if method == 'POST':
             tag_value = data.get("tag", "").strip()
+            color_code = data.get("colorCode", "#000000").strip()
+
             if not tag_value:
                 return jsonify({"error": "タグ内容が未指定です"}), 400
 
+            if not re.fullmatch(r"^#[0-9a-fA-F]{6}$", color_code):
+                color_code = "#000000"
+
             db.execute(
-                "INSERT INTO template_tags (community_id, tag) VALUES (?, ?)",
-                (int(community_id), tag_value)
+                "INSERT INTO template_tags (community_id, tag, color_code) VALUES (?, ?, ?)",
+                (int(community_id), tag_value, color_code)
             )
             db.commit()
 
@@ -137,6 +205,7 @@ class CommunityService:
             return jsonify({
                 "message": "タグを追加しました",
                 "template_tag_id": new_id,
+                "color_code": color_code,
                 "result": True
             }), 201
 
@@ -146,18 +215,24 @@ class CommunityService:
 
         if method == 'PUT':
             tag_value = data.get("tag", "").strip()
+            color_code = data.get("colorCode", "#000000").strip()
+
             if not tag_value:
                 return jsonify({"error": "タグ内容が未指定です"}), 400
 
+            if not re.fullmatch(r"^#[0-9a-fA-F]{6}$", color_code):
+                color_code = "#000000"
+
             db.execute(
-                "UPDATE template_tags SET tag = ? WHERE id = ? AND community_id = ?",
-                (tag_value, int(tag_id), int(community_id))
+                "UPDATE template_tags SET tag = ?, color_code = ? WHERE id = ? AND community_id = ?",
+                (tag_value, color_code, int(tag_id), int(community_id))
             )
             db.commit()
 
             return jsonify({
                 "message": "タグを更新しました",
                 "template_tag_id": int(tag_id),
+                "color_code": color_code,
                 "result": True
             }), 200
 
@@ -178,10 +253,10 @@ class CommunityService:
 
     def get_tags(self):
         """
-        指定されたコミュニティIDに紐づくテンプレートタグ一覧を返す。
+        M6指定されたコミュニティIDに対応するテンプレートタグの一覧を取得する。
 
         Returns:
-            Response: 成功時200, 入力エラー時400
+            JSONレスポンス（取得成功: 200, 入力エラー: 400）
         """
         community_id = request.args.get("community_id", "").strip()
         if not community_id.isdigit():
@@ -189,10 +264,136 @@ class CommunityService:
 
         db = get_db()
         rows = db.execute(
-            "SELECT id, tag FROM template_tags WHERE community_id = ?",
+            "SELECT id, tag, color_code FROM template_tags WHERE community_id = ?",
             (int(community_id),)
         ).fetchall()
 
-        tag_list = [{"id": row["id"], "tag": row["tag"]} for row in rows]
+        tag_list = [
+            {"id": row["id"], "tag": row["tag"], "color_code": row["color_code"] or "#000000"}
+            for row in rows
+        ]
 
         return jsonify({"tags": tag_list}), 200
+
+    def post_chat(self, community_id, tag_id):
+        """
+        M8チャットメッセージをデータベースに登録する。
+
+        Args:
+            community_id (str): コミュニティID
+            tag_id (str): テンプレートタグID
+
+        Returns:
+            JSONレスポンス（成功: 201, 入力エラー: 400, 保存失敗: 500）
+        """
+        data = request.get_json() or {}
+        date = data.get("date", "").strip()
+        message = data.get("message", "").strip()
+        sender_id = data.get("sender_id", "").strip()
+
+        if not all([community_id.isdigit(), tag_id.isdigit(), date, message, sender_id]):
+            return jsonify({"post_status": False, "error": "必要な項目が不足しています。"}), 400
+
+        if len(message) > 200:
+            return jsonify({"post_status": False, "error": "半角英数字200文字以内で入力してください。"}), 400
+
+        db = get_db()
+        try:
+            db.execute(
+                """
+                INSERT INTO chat_messages (community_id, tag_id, date, sender_id, message_content, timestamp)
+                VALUES (?, ?, ?, ?, ?, datetime('now'))
+                """,
+                (int(community_id), int(tag_id), date, sender_id, message)
+            )
+            db.commit()
+        except Exception as e:
+            logger.warning(f"❌ チャット保存失敗: {e}")
+            return jsonify({"post_status": False, "error": "メッセージ保存中にエラーが発生しました。"}), 500
+
+        new_message = {
+            "sender_id": sender_id,
+            "sender_name": sender_id,
+            "message_content": message,
+            "timestamp": "now"
+        }
+
+        return jsonify({"post_status": True, "new_message": new_message}), 201
+
+    def get_chat_history(self, community_id, tag_id):
+        """
+        M9指定されたコミュニティ・タグ・日付に紐づくチャット履歴を取得する。
+
+        Args:
+            community_id (str): コミュニティID
+            tag_id (str): タグID
+
+        Returns:
+            JSONレスポンス（取得成功: 200, 入力不正: 400, DBエラー: 500）
+        """
+        date = request.args.get("date", "").strip()
+
+        if not all([community_id.isdigit(), tag_id.isdigit(), date]):
+            return jsonify({"error": "不正な入力です"}), 400
+
+        db = get_db()
+        try:
+            rows = db.execute(
+                """
+                SELECT sender_id, message_content, timestamp
+                FROM chat_messages
+                WHERE community_id = ? AND tag_id = ? AND date = ?
+                ORDER BY timestamp ASC
+                """,
+                (int(community_id), int(tag_id), date)
+            ).fetchall()
+        except Exception as e:
+            logger.warning(f"❌ チャット履歴取得失敗: {e}")
+            return jsonify({"error": "チャット履歴の取得に失敗しました。"}), 500
+
+        chat_history = [
+            {
+                "sender_id": row["sender_id"],
+                "sender_name": row["sender_id"],
+                "message_content": row["message_content"],
+                "timestamp": row["timestamp"]
+            } for row in rows
+        ]
+
+    def get_community_members(self):
+        """
+        M7: 指定されたコミュニティIDに所属するユーザ一覧を取得する。
+
+        Returns:
+            JSONレスポンス（成功: 200, 入力不正: 400, 存在しない: 404）
+        """
+        community_id = request.args.get("community_id", "").strip()
+        from modules.community_management.community_management import CommunityManagement
+        cm = CommunityManagement()
+        return cm.get_community_members(community_id)
+    
+    def get_community_info_by_id(self):
+        """
+        M10: コミュニティIDから情報取得
+        """
+        community_id = request.args.get("community_id", "").strip()
+        from modules.community_management.community_management import CommunityManagement
+        cm = CommunityManagement()
+        return cm.get_community_info_by_id(community_id)
+
+    def get_community_info_by_tag_id(self):
+        """
+        M11: テンプレートタグIDからコミュニティ情報取得
+        """
+        tag_id = request.args.get("tag_id", "").strip()
+        from modules.community_management.community_management import CommunityManagement
+        cm = CommunityManagement()
+        return cm.get_community_info_by_tag_id(tag_id)
+
+    def get_community_members_by_tag_id(self):
+        """
+        M12: テンプレートタグIDからコミュニティメンバー取得
+        """
+        tag_id = request.args.get("tag_id", "").strip()
+        cm = CommunityManagement()
+        return cm.get_community_members_by_tag_id(tag_id)

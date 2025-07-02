@@ -1,4 +1,4 @@
-#backend/database/models/template_tag.py
+# backend/database/models/template_tag.py
 """
 テンプレートタグモデル定義
 """
@@ -11,5 +11,6 @@ class TemplateTagModel(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     community_id = db.Column(db.Integer, db.ForeignKey("communities.id"), nullable=False)
     tag = db.Column(db.String(100), nullable=False)
+    color_code = db.Column(db.String(7), nullable=False, default="#000000")  # ← 追加（#RRGGBB形式）
 
     community = db.relationship("CommunityModel", backref="template_tags")
