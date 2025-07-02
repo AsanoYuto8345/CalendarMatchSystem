@@ -14,6 +14,7 @@ const CommunityCalendarTagViewPage = () => {
   const { communityId, date } = useParams();
   const navigate = useNavigate();
   const [tagList, setTagList] = useState([]);
+
   const [memberList, setMemberList] = useState([]); // メンバーリストは、タグを投稿したユーザー情報から構築します。
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -28,14 +29,13 @@ const CommunityCalendarTagViewPage = () => {
           return;
         }
 
-        // C10 カレンダー情報管理部 M4 タグコミュニティ検索処理からタグリストを取得
-        const tagRes = await axios.get(`${process.env.REACT_APP_API_SERVER_URL}/api/calendar-manager/tags`, {
-          params: { community_id: communityId, date: date }
-        });
-        const fetchedTags = tagRes.data.tags || [];
+        // C4 カレンダー情報処理部 M4 タグコミュニティ検索処理からタグリストを取得
+        const tagRes = await axios.get(`${process.env.REACT_APP_API_SERVER_URL}/api/${communityId}/calendar/tag/get?date=${date}`);
+        const fetchedTags = tagRes.data.data || [];
+        console.log(fetchedTags);
 
         if (fetchedTags.length === 0) {
-          setError("この日付にはタグがありません。"); /*  */
+          setError("この日付にはタグがありません。");
           setTagList([]);
           setMemberList([]);
           setLoading(false);

@@ -43,8 +43,8 @@ def delete_tag(community_id):
 
 @calendar_bp.route('/tag/get', methods=['GET'])
 def get_community_date_tag(community_id):
-    data = request.get_json()
-    date = data.get("date")
+    date = request.args.get("date")#data = request.get_json()
+    #  date = data.get("date")
     
     if not date:
         return jsonify({"error": "date未指定"}), 400
