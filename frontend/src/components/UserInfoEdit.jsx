@@ -1,4 +1,4 @@
-// W19 ユーザ情報編集画面に対応するReactコンポーネント 担当: 角田一颯
+// W19 ユーザ情報編集画面 担当: 角田一颯
 
 import { useState, useRef } from "react";
 
