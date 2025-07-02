@@ -23,9 +23,7 @@ const CommunityMemberListPage = () => {
       } catch (err) {
         console.error("メンバー情報の取得に失敗しました: ", err);
         if (err.response && err.response.status === 404) {
-          setError("コミュニティが見つかりません。"); // 
-          // コミュニティ選択画面へ遷移 
-          navigate('/community/select'); // 仮の遷移先。実際の画面遷移パスに修正してください。
+          setError("コミュニティが見つかりません。");
         } else {
           setError("メンバー情報の取得に失敗しました。"); // 
         }
@@ -39,7 +37,7 @@ const CommunityMemberListPage = () => {
 
   const handleCloseClick = () => {
     // W2 カレンダー画面 (community_calendar_view_page) に戻る 
-    navigate('/community/calendar/view');
+    navigate(`/community/${communityId}/calendar/view`);
   };
 
   if (loading) return <div className="p-4">読み込み中...</div>;
