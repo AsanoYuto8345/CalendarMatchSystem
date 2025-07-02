@@ -10,7 +10,7 @@ function CommunityJoin() {
     e.preventDefault();
     try {
       await axios.post('http://localhost:5001/api/community/join', {
-        community_name: communityId
+        community_id: communityId
       });
       setShowSuccessModal(true);
     } catch (error) {

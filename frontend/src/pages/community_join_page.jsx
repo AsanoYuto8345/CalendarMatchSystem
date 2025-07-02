@@ -5,7 +5,6 @@
  * 作成者: 遠藤 信輝
  */
 
-import React from 'react'
 import CommunityJoin from '../components/CommunityJoin'
 
 /**
