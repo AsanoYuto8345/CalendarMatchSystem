@@ -26,7 +26,7 @@ class CommunityService:
 
     def create(self):
         """
-        新しいコミュニティを作成し、必要に応じて画像ファイルを保存する。
+        M2新しいコミュニティを作成し、必要に応じて画像ファイルを保存する。
 
         Returns:
             JSONレスポンス（作成成功: 201, 入力エラー: 400, 重複: 409）
@@ -75,7 +75,7 @@ class CommunityService:
 
     def join(self):
         """
-        指定されたユーザを既存のコミュニティに参加させる。
+        M3指定されたユーザを既存のコミュニティに参加させる。
 
         Returns:
             JSONレスポンス（参加成功: 200, 入力エラー: 400, 未存在: 404）
@@ -114,7 +114,7 @@ class CommunityService:
 
     def get_joined_communities(self):
         """
-        指定されたユーザが所属している全てのコミュニティ情報を取得する。
+        M9指定されたユーザが所属している全てのコミュニティ情報を取得する。
 
         Returns:
             JSONレスポンス（取得成功: 200, 入力エラー: 400）
@@ -145,7 +145,7 @@ class CommunityService:
 
     def leave(self):
         """
-        指定されたユーザをコミュニティから脱退させる。
+        M4指定されたユーザをコミュニティから脱退させる。
 
         Returns:
             JSONレスポンス（脱退成功: 200, 入力エラー: 400）
@@ -170,7 +170,7 @@ class CommunityService:
 
     def edit_tags(self):
         """
-        テンプレートタグの追加・更新・削除を実行する。
+        M5テンプレートタグの追加・更新・削除を実行する。
 
         Returns:
             JSONレスポンス（成功時: 200/201, 入力エラー: 400, メソッド不正: 405）
@@ -253,7 +253,7 @@ class CommunityService:
 
     def get_tags(self):
         """
-        指定されたコミュニティIDに対応するテンプレートタグの一覧を取得する。
+        M6指定されたコミュニティIDに対応するテンプレートタグの一覧を取得する。
 
         Returns:
             JSONレスポンス（取得成功: 200, 入力エラー: 400）
@@ -277,7 +277,7 @@ class CommunityService:
 
     def post_chat(self, community_id, tag_id):
         """
-        チャットメッセージをデータベースに登録する。
+        M8チャットメッセージをデータベースに登録する。
 
         Args:
             community_id (str): コミュニティID
@@ -322,7 +322,7 @@ class CommunityService:
 
     def get_chat_history(self, community_id, tag_id):
         """
-        指定されたコミュニティ・タグ・日付に紐づくチャット履歴を取得する。
+        M9指定されたコミュニティ・タグ・日付に紐づくチャット履歴を取得する。
 
         Args:
             community_id (str): コミュニティID
@@ -360,4 +360,40 @@ class CommunityService:
             } for row in rows
         ]
 
-        return jsonify({"chat_history": chat_history}), 200
+    def get_community_members(self):
+        """
+        M7: 指定されたコミュニティIDに所属するユーザ一覧を取得する。
+
+        Returns:
+            JSONレスポンス（成功: 200, 入力不正: 400, 存在しない: 404）
+        """
+        community_id = request.args.get("community_id", "").strip()
+        from modules.community_management.community_management import CommunityManagement
+        cm = CommunityManagement()
+        return cm.get_community_members(community_id)
+    
+    def get_community_info_by_id(self):
+        """
+        M10: コミュニティIDから情報取得
+        """
+        community_id = request.args.get("community_id", "").strip()
+        from modules.community_management.community_management import CommunityManagement
+        cm = CommunityManagement()
+        return cm.get_community_info_by_id(community_id)
+
+    def get_community_info_by_tag_id(self):
+        """
+        M11: テンプレートタグIDからコミュニティ情報取得
+        """
+        tag_id = request.args.get("tag_id", "").strip()
+        from modules.community_management.community_management import CommunityManagement
+        cm = CommunityManagement()
+        return cm.get_community_info_by_tag_id(tag_id)
+
+    def get_community_members_by_tag_id(self):
+        """
+        M12: テンプレートタグIDからコミュニティメンバー取得
+        """
+        tag_id = request.args.get("tag_id", "").strip()
+        cm = CommunityManagement()
+        return cm.get_community_members_by_tag_id(tag_id)

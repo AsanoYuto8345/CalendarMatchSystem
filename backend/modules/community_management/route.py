@@ -61,6 +61,7 @@ def get_chat(community_id, tag_id):
     date = request.args.get("date", "").strip()
     return service.get_chat_history(community_id, tag_id, date)
 
+
 @management_bp.route("/user/<user_id>/communities-tags", methods=["GET"])
 def get_communities_tags_by_user(user_id):
     """
@@ -70,3 +71,35 @@ def get_communities_tags_by_user(user_id):
         Response: 200 OK or 400 Bad Request
     """
     return service.get_communities_and_tags_by_user(user_id)
+
+
+@management_bp.route("/info_by_id", methods=["GET"])
+def get_community_info_by_id():
+    """
+    M10: コミュニティIDから情報取得
+    """
+    return service.get_community_info_by_id()
+
+
+@management_bp.route("/info_by_tag", methods=["GET"])
+def get_community_info_by_tag_id():
+    """
+    M11: テンプレートタグIDからコミュニティ情報取得
+    """
+    return service.get_community_info_by_tag_id()
+
+
+@management_bp.route("/members", methods=["GET"])
+def get_community_members():
+    """
+    M7: コミュニティIDからメンバー取得
+    """
+    return service.get_community_members()
+
+
+@management_bp.route("/members_by_tag", methods=["GET"])
+def get_community_members_by_tag():
+    """
+    M12: テンプレートタグIDからコミュニティメンバー取得
+    """
+    return service.get_community_members_by_tag_id()

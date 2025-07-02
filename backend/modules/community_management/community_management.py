@@ -293,3 +293,32 @@ class CommunityManagement:
         ]
 
         return jsonify({"chat_history": chat_history}), 200
+
+    def get_community_members(self, community_id):
+        """
+        M7: 指定されたコミュニティに所属するユーザ一覧を取得する。
+
+        Args:
+            community_id (str): コミュニティID（文字列）
+
+        Returns:
+            Response: 所属メンバー一覧（成功200, 入力不正400, 未存在404）
+        """
+        if not community_id.isdigit():
+            return jsonify({"error": "無効なコミュニティIDです"}), 400
+
+        db = get_db()
+        community_exists = db.execute(
+            "SELECT 1 FROM communities WHERE id = ?", (int(community_id),)
+        ).fetchone()
+        if not community_exists:
+            return jsonify({"error": f"ID {community_id} のコミュニティは存在しません"}), 404
+
+        members = db.execute(
+            "SELECT user_id FROM members WHERE community_id = ?",
+            (int(community_id),)
+        ).fetchall()
+
+        member_list = [row["user_id"] for row in members]
+
+        return jsonify({"result": True, "members": member_list}), 200
