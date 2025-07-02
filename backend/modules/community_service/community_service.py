@@ -254,9 +254,6 @@ class CommunityService:
     def get_tags(self):
         """
         M6指定されたコミュニティIDに対応するテンプレートタグの一覧を取得する。
-
-        Returns:
-            JSONレスポンス（取得成功: 200, 入力エラー: 400）
         """
         community_id = request.args.get("community_id", "").strip()
         if not community_id.isdigit():
@@ -277,104 +274,34 @@ class CommunityService:
 
     def post_chat(self, community_id, tag_id):
         """
-        M8チャットメッセージをデータベースに登録する。
-
-        Args:
-            community_id (str): コミュニティID
-            tag_id (str): テンプレートタグID
-
-        Returns:
-            JSONレスポンス（成功: 201, 入力エラー: 400, 保存失敗: 500）
+        M8: チャットメッセージ投稿（C9管理部に処理を委譲）
         """
         data = request.get_json() or {}
-        date = data.get("date", "").strip()
-        message = data.get("message", "").strip()
-        sender_id = data.get("sender_id", "").strip()
-
-        if not all([community_id.isdigit(), tag_id.isdigit(), date, message, sender_id]):
-            return jsonify({"post_status": False, "error": "必要な項目が不足しています。"}), 400
-
-        if len(message) > 200:
-            return jsonify({"post_status": False, "error": "半角英数字200文字以内で入力してください。"}), 400
-
-        db = get_db()
-        try:
-            db.execute(
-                """
-                INSERT INTO chat_messages (community_id, tag_id, date, sender_id, message_content, timestamp)
-                VALUES (?, ?, ?, ?, ?, datetime('now'))
-                """,
-                (int(community_id), int(tag_id), date, sender_id, message)
-            )
-            db.commit()
-        except Exception as e:
-            logger.warning(f"❌ チャット保存失敗: {e}")
-            return jsonify({"post_status": False, "error": "メッセージ保存中にエラーが発生しました。"}), 500
-
-        new_message = {
-            "sender_id": sender_id,
-            "sender_name": sender_id,
-            "message_content": message,
-            "timestamp": "now"
-        }
-
-        return jsonify({"post_status": True, "new_message": new_message}), 201
+        from modules.community_management.community_management import CommunityManagement
+        cm = CommunityManagement()
+        return cm.post_chat(community_id, tag_id, data)
 
     def get_chat_history(self, community_id, tag_id):
         """
-        M9指定されたコミュニティ・タグ・日付に紐づくチャット履歴を取得する。
-
-        Args:
-            community_id (str): コミュニティID
-            tag_id (str): タグID
-
-        Returns:
-            JSONレスポンス（取得成功: 200, 入力不正: 400, DBエラー: 500）
+        M9: チャット履歴を取得（C9管理部に委譲）
         """
         date = request.args.get("date", "").strip()
-
-        if not all([community_id.isdigit(), tag_id.isdigit(), date]):
-            return jsonify({"error": "不正な入力です"}), 400
-
-        db = get_db()
-        try:
-            rows = db.execute(
-                """
-                SELECT sender_id, message_content, timestamp
-                FROM chat_messages
-                WHERE community_id = ? AND tag_id = ? AND date = ?
-                ORDER BY timestamp ASC
-                """,
-                (int(community_id), int(tag_id), date)
-            ).fetchall()
-        except Exception as e:
-            logger.warning(f"❌ チャット履歴取得失敗: {e}")
-            return jsonify({"error": "チャット履歴の取得に失敗しました。"}), 500
-
-        chat_history = [
-            {
-                "sender_id": row["sender_id"],
-                "sender_name": row["sender_id"],
-                "message_content": row["message_content"],
-                "timestamp": row["timestamp"]
-            } for row in rows
-        ]
+        from modules.community_management.community_management import CommunityManagement
+        cm = CommunityManagement()
+        return cm.get_chat_history(community_id, tag_id, date)
 
     def get_community_members(self):
         """
-        M7: 指定されたコミュニティIDに所属するユーザ一覧を取得する。
-
-        Returns:
-            JSONレスポンス（成功: 200, 入力不正: 400, 存在しない: 404）
+        M7: 指定されたコミュニティIDに所属するユーザ一覧を取得する（C9へ委譲）
         """
         community_id = request.args.get("community_id", "").strip()
         from modules.community_management.community_management import CommunityManagement
         cm = CommunityManagement()
         return cm.get_community_members(community_id)
-    
+
     def get_community_info_by_id(self):
         """
-        M10: コミュニティIDから情報取得
+        M10: コミュニティIDから情報取得（C9へ委譲）
         """
         community_id = request.args.get("community_id", "").strip()
         from modules.community_management.community_management import CommunityManagement
@@ -383,7 +310,7 @@ class CommunityService:
 
     def get_community_info_by_tag_id(self):
         """
-        M11: テンプレートタグIDからコミュニティ情報取得
+        M11: テンプレートタグIDからコミュニティ情報取得（C9へ委譲）
         """
         tag_id = request.args.get("tag_id", "").strip()
         from modules.community_management.community_management import CommunityManagement
@@ -392,8 +319,9 @@ class CommunityService:
 
     def get_community_members_by_tag_id(self):
         """
-        M12: テンプレートタグIDからコミュニティメンバー取得
+        M12: テンプレートタグIDからコミュニティメンバー取得（C9へ委譲）
         """
         tag_id = request.args.get("tag_id", "").strip()
+        from modules.community_management.community_management import CommunityManagement
         cm = CommunityManagement()
         return cm.get_community_members_by_tag_id(tag_id)
