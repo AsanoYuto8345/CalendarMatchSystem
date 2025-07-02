@@ -146,3 +146,56 @@ def manager_tag_save():
         return jsonify(result), status_code
 
 
+@calendar_manager_bp.route('/find/matching_tags', methods=['GET'])
+def manager_find_matching_tags():
+    """
+    C10 M5 マッチングタグ取得要求
+
+    指定されたコミュニティID・タグ名・日付に一致し、
+    かつリクエストユーザー以外が登録したタグを取得するエンドポイント。
+
+    Args:
+        request (flask.Request):
+            ボディに以下のキーを含む必要があります。
+            - community_id (str):       コミュニティID
+            - tag_name (str):           タグ名
+            - date (str):               日付（'YYYY-MM-DD'形式）
+            - registered_user_id (str): 登録ユーザーのID
+
+    Returns:
+        flask.Response: JSONレスポンスとステータスコード
+            - 200: {'result': True,  'message': "...", 'data': […]}
+            - 400: {'result': False, 'message': "<キー>が未指定です。"}
+            - 500: {'result': False, 'message': "タグマッチングの検索に失敗しました: <例外メッセージ>"}
+    """
+    data = request.get_json()
+    if not data:
+        return jsonify({"result": False, "message": "リクエストボディが空です。"}), 400
+    
+    community_id        = data.get('community_id')
+    tag_name            = data.get('tag_name')
+    date                = data.get('date')
+    registered_user_id  = data.get('registered_user_id')
+
+    # 入力チェック
+    for key, val in [
+        ("community_id", community_id),
+        ("tag_name", tag_name),
+        ("date", date),
+        ("registered_user_id", registered_user_id)
+    ]:
+        if not val:
+            return jsonify({"result": False, "message": f"{key}が未指定です。"}), 400
+
+    # 処理
+    manager = CalendarManager(db)
+    result = manager.find_matching_tag(
+        community_id, tag_name, date, registered_user_id
+    )
+
+    # レスポンス返却
+    if result["result"]:
+        return jsonify(result), 200
+    else:
+        # 検索例外のみ500
+        return jsonify(result), 500
