@@ -55,7 +55,7 @@ app.register_blueprint(auth_bp)
 app.register_blueprint(calendar_bp)
 app.register_blueprint(calendar_manager_bp)
 app.register_blueprint(community_service_bp, url_prefix="/api/community")
-app.register_blueprint(community_management_bp, url_prefix="/api/community/manage")
+app.register_blueprint(community_management_bp)
 app.register_blueprint(user_data_bp) # C3 ユーザ情報処理部のBlueprintを登録
 app.register_blueprint(user_bp)      # C8 ユーザ情報管理部のBlueprintを登録
 

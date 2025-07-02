@@ -25,6 +25,12 @@ class CommunityService:
     """
 
     def create(self):
+        """
+        新しいコミュニティを作成し、必要に応じて画像ファイルを保存する。
+
+        Returns:
+            JSONレスポンス（作成成功: 201, 入力エラー: 400, 重複: 409）
+        """
         name = request.form.get("community_name", "").strip()
         if not name:
             return jsonify({"error": "コミュニティ名が未入力です"}), 400
@@ -68,6 +74,12 @@ class CommunityService:
         }), 201
 
     def join(self):
+        """
+        指定されたユーザを既存のコミュニティに参加させる。
+
+        Returns:
+            JSONレスポンス（参加成功: 200, 入力エラー: 400, 未存在: 404）
+        """
         name = request.json.get("community_name", "").strip()
         user_id = request.json.get("user_id", "").strip()
         if not user_id:
@@ -101,6 +113,12 @@ class CommunityService:
         }), 200
 
     def get_joined_communities(self):
+        """
+        指定されたユーザが所属している全てのコミュニティ情報を取得する。
+
+        Returns:
+            JSONレスポンス（取得成功: 200, 入力エラー: 400）
+        """
         user_id = request.args.get("user_id", "").strip()
 
         if not user_id:
@@ -126,6 +144,12 @@ class CommunityService:
         return jsonify({"communities": communities}), 200
 
     def leave(self):
+        """
+        指定されたユーザをコミュニティから脱退させる。
+
+        Returns:
+            JSONレスポンス（脱退成功: 200, 入力エラー: 400）
+        """
         user_id = request.json.get("id", "").strip()
         community_id = request.json.get("community_id", "").strip()
 
@@ -145,6 +169,12 @@ class CommunityService:
         }), 200
 
     def edit_tags(self):
+        """
+        テンプレートタグの追加・更新・削除を実行する。
+
+        Returns:
+            JSONレスポンス（成功時: 200/201, 入力エラー: 400, メソッド不正: 405）
+        """
         method = request.method
         data = request.get_json() or {}
         community_id = data.get("community_id", "").strip()
@@ -222,6 +252,12 @@ class CommunityService:
         return jsonify({"error": "許可されていないメソッドです"}), 405
 
     def get_tags(self):
+        """
+        指定されたコミュニティIDに対応するテンプレートタグの一覧を取得する。
+
+        Returns:
+            JSONレスポンス（取得成功: 200, 入力エラー: 400）
+        """
         community_id = request.args.get("community_id", "").strip()
         if not community_id.isdigit():
             return jsonify({"error": "コミュニティIDが未指定または不正です"}), 400
@@ -240,6 +276,16 @@ class CommunityService:
         return jsonify({"tags": tag_list}), 200
 
     def post_chat(self, community_id, tag_id):
+        """
+        チャットメッセージをデータベースに登録する。
+
+        Args:
+            community_id (str): コミュニティID
+            tag_id (str): テンプレートタグID
+
+        Returns:
+            JSONレスポンス（成功: 201, 入力エラー: 400, 保存失敗: 500）
+        """
         data = request.get_json() or {}
         date = data.get("date", "").strip()
         message = data.get("message", "").strip()
@@ -275,6 +321,16 @@ class CommunityService:
         return jsonify({"post_status": True, "new_message": new_message}), 201
 
     def get_chat_history(self, community_id, tag_id):
+        """
+        指定されたコミュニティ・タグ・日付に紐づくチャット履歴を取得する。
+
+        Args:
+            community_id (str): コミュニティID
+            tag_id (str): タグID
+
+        Returns:
+            JSONレスポンス（取得成功: 200, 入力不正: 400, DBエラー: 500）
+        """
         date = request.args.get("date", "").strip()
 
         if not all([community_id.isdigit(), tag_id.isdigit(), date]):

@@ -39,7 +39,7 @@ def update():
 @management_bp.route("/<community_id>/tag/<tag_id>/chat", methods=["POST"])
 def post_chat(community_id, tag_id):
     """
-    M23-1: チャット送信処理
+    M8: チャット送信処理
 
     Returns:
         Response: 送信成功201, 入力不正400, 保存失敗500
@@ -50,7 +50,7 @@ def post_chat(community_id, tag_id):
 @management_bp.route("/<community_id>/tag/<tag_id>/chat", methods=["GET"])
 def get_chat(community_id, tag_id):
     """
-    M23-2: チャット履歴取得処理
+    M9: チャット履歴取得処理
 
     クエリ:
         ?date=YYYY-MM-DD
@@ -60,3 +60,13 @@ def get_chat(community_id, tag_id):
     """
     date = request.args.get("date", "").strip()
     return service.get_chat_history(community_id, tag_id, date)
+
+@management_bp.route("/user/<user_id>/communities-tags", methods=["GET"])
+def get_communities_tags_by_user(user_id):
+    """
+    M1: ユーザIDからコミュニティ＋テンプレートタグ取得
+
+    Returns:
+        Response: 200 OK or 400 Bad Request
+    """
+    return service.get_communities_and_tags_by_user(user_id)

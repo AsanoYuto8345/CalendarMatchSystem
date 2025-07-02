@@ -63,10 +63,48 @@ init_db()
 
 class CommunityManagement:
     """
-    コミュニティ管理部
-    - コミュニティ登録、テンプレートタグ編集、チャット履歴管理などの処理を担当
+    M1: コミュニティ情報主処理
+    ユーザIDをもとに所属コミュニティとテンプレートタグ情報を検索・返却する。
     """
 
+    def get_communities_and_tags_by_user(self, user_id):
+        """
+        ユーザIDから所属コミュニティおよびそのテンプレートタグ一覧を取得する。
+
+        Args:
+            user_id (str): ユーザID
+
+        Returns:
+            Response: 所属コミュニティ情報＋タグ一覧（成功200、不正400）
+        """
+        user_id = user_id.strip()
+        if not user_id:
+            return jsonify({"error": "ユーザIDが未指定です"}), 400  # E1
+
+        db = get_db()
+        rows = db.execute("""
+            SELECT c.id AS community_id, c.name AS community_name, c.image_path
+            FROM communities c
+            INNER JOIN members m ON c.id = m.community_id
+            WHERE m.user_id = ?
+        """, (user_id,)).fetchall()
+
+        result = []
+        for row in rows:
+            tag_rows = db.execute(
+                "SELECT id, tag, color_code FROM template_tags WHERE community_id = ?",
+                (row["community_id"],)
+            ).fetchall()
+            tags = [
+                {"id": r["id"], "tag": r["tag"], "color_code": r["color_code"]} for r in tag_rows
+            ]
+            result.append({
+                "id": user_id,  # 出力：ユーザID
+                "community_name": row["community_name"],
+                "tags": tags
+            })
+
+        return jsonify({"result": True, "communities": result}), 200
     def register(self, name, image=None):
         if not name:
             return jsonify({"error": "コミュニティ名が未入力です"}), 400
