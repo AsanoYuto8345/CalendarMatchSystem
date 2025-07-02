@@ -28,9 +28,10 @@ const TemplateTagEditPage = () => {
    */
     setLoading(true);
     axios
-      .put(`${process.env.REACT_APP_API_SERVER_URL}/api/community/${communityId}/template_tags/${tagId}}`,
+      .put(`${process.env.REACT_APP_API_SERVER_URL}/api/community/template_tags`,
         {
-          tag_name: tagName,
+          tag: tagName,
+          template_tag_id: tagId,  
           color_code: colorCode
         }
       )
@@ -48,9 +49,9 @@ const TemplateTagEditPage = () => {
 
   useEffect(() => {
     axios
-      .get(`${process.env.REACT_APP_API_SERVER_URL}/api/community/${communityId}/template_tags/${tagId}`)
+      .get(`${process.env.REACT_APP_API_SERVER_URL}/api/community/template_tags?template_tag_id=${tagId}`)
       .then((res) => {
-        setTagName(res.data.tag_name || "");
+        setTagName(res.data.tag || "");
         setColorCode(res.data.color_code || "");
       })
       .catch((err) => {
