@@ -1,7 +1,7 @@
 # backend/modules/community_service/community_service.py
 """
 C4 コミュニティ処理部クラス定義
-本モジュールは、コミュニティの作成・参加・脱退・テンプレートタグ処理などを担当する。
+本モジュールは、コミュニティの作成・参加・脱退・テンプレートタグ処理、チャット処理などを担当する。
 作成者: 遠藤信輝
 最終更新: 2025/07/01
 """
@@ -25,12 +25,6 @@ class CommunityService:
     """
 
     def create(self):
-        """
-        コミュニティを新規作成する。
-
-        Returns:
-            Response: 成功時201, 入力エラー時400, 重複時409
-        """
         name = request.form.get("community_name", "").strip()
         if not name:
             return jsonify({"error": "コミュニティ名が未入力です"}), 400
@@ -74,12 +68,6 @@ class CommunityService:
         }), 201
 
     def join(self):
-        """
-        指定されたコミュニティに参加する。
-
-        Returns:
-            Response: 成功時200, 不存在404
-        """
         name = request.json.get("community_name", "").strip()
         user_id = request.json.get("user_id", "").strip()
         if not user_id:
@@ -113,15 +101,6 @@ class CommunityService:
         }), 200
 
     def get_joined_communities(self):
-        """
-        指定ユーザーが所属しているコミュニティ一覧を返す。
-
-        クエリパラメータ:
-            - user_id: 対象ユーザーのID
-
-        Returns:
-            JSON形式のコミュニティ情報配列（id, name, image_path）
-        """
         user_id = request.args.get("user_id", "").strip()
 
         if not user_id:
@@ -147,12 +126,6 @@ class CommunityService:
         return jsonify({"communities": communities}), 200
 
     def leave(self):
-        """
-        ユーザーを指定されたコミュニティから脱退させる。
-
-        Returns:
-            Response: 成功時200, 入力エラー時400
-        """
         user_id = request.json.get("id", "").strip()
         community_id = request.json.get("community_id", "").strip()
 
@@ -172,12 +145,6 @@ class CommunityService:
         }), 200
 
     def edit_tags(self):
-        """
-        テンプレートタグを追加・更新・削除する。
-
-        Returns:
-            Response: 操作に応じて201/200/400/404など
-        """
         method = request.method
         data = request.get_json() or {}
         community_id = data.get("community_id", "").strip()
@@ -255,12 +222,6 @@ class CommunityService:
         return jsonify({"error": "許可されていないメソッドです"}), 405
 
     def get_tags(self):
-        """
-        指定されたコミュニティIDに紐づくテンプレートタグ一覧を返す。
-
-        Returns:
-            Response: 成功時200, 入力エラー時400
-        """
         community_id = request.args.get("community_id", "").strip()
         if not community_id.isdigit():
             return jsonify({"error": "コミュニティIDが未指定または不正です"}), 400
@@ -277,3 +238,70 @@ class CommunityService:
         ]
 
         return jsonify({"tags": tag_list}), 200
+
+    def post_chat(self, community_id, tag_id):
+        data = request.get_json() or {}
+        date = data.get("date", "").strip()
+        message = data.get("message", "").strip()
+        sender_id = data.get("sender_id", "").strip()
+
+        if not all([community_id.isdigit(), tag_id.isdigit(), date, message, sender_id]):
+            return jsonify({"post_status": False, "error": "必要な項目が不足しています。"}), 400
+
+        if len(message) > 200:
+            return jsonify({"post_status": False, "error": "半角英数字200文字以内で入力してください。"}), 400
+
+        db = get_db()
+        try:
+            db.execute(
+                """
+                INSERT INTO chat_messages (community_id, tag_id, date, sender_id, message_content, timestamp)
+                VALUES (?, ?, ?, ?, ?, datetime('now'))
+                """,
+                (int(community_id), int(tag_id), date, sender_id, message)
+            )
+            db.commit()
+        except Exception as e:
+            logger.warning(f"❌ チャット保存失敗: {e}")
+            return jsonify({"post_status": False, "error": "メッセージ保存中にエラーが発生しました。"}), 500
+
+        new_message = {
+            "sender_id": sender_id,
+            "sender_name": sender_id,
+            "message_content": message,
+            "timestamp": "now"
+        }
+
+        return jsonify({"post_status": True, "new_message": new_message}), 201
+
+    def get_chat_history(self, community_id, tag_id):
+        date = request.args.get("date", "").strip()
+
+        if not all([community_id.isdigit(), tag_id.isdigit(), date]):
+            return jsonify({"error": "不正な入力です"}), 400
+
+        db = get_db()
+        try:
+            rows = db.execute(
+                """
+                SELECT sender_id, message_content, timestamp
+                FROM chat_messages
+                WHERE community_id = ? AND tag_id = ? AND date = ?
+                ORDER BY timestamp ASC
+                """,
+                (int(community_id), int(tag_id), date)
+            ).fetchall()
+        except Exception as e:
+            logger.warning(f"❌ チャット履歴取得失敗: {e}")
+            return jsonify({"error": "チャット履歴の取得に失敗しました。"}), 500
+
+        chat_history = [
+            {
+                "sender_id": row["sender_id"],
+                "sender_name": row["sender_id"],
+                "message_content": row["message_content"],
+                "timestamp": row["timestamp"]
+            } for row in rows
+        ]
+
+        return jsonify({"chat_history": chat_history}), 200

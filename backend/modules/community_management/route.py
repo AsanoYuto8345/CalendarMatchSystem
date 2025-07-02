@@ -1,10 +1,10 @@
-#backend/modules/community_management/route.py
+# backend/modules/community_management/route.py
 """
 C9 コミュニティ情報管理部のルーティング
 エンドポイント経由で管理機能を提供する。
 """
 
-from flask import Blueprint, request, jsonify
+from flask import Blueprint, request
 from .community_management import CommunityManagement
 
 # Blueprint の定義（URLプレフィックス付き）
@@ -12,6 +12,7 @@ management_bp = Blueprint("community_management", __name__, url_prefix="/communi
 
 # サービスクラスのインスタンス化
 service = CommunityManagement()
+
 
 @management_bp.route("/info", methods=["GET"])
 def get_info():
@@ -23,6 +24,7 @@ def get_info():
     """
     return service.getcommunityInfo()
 
+
 @management_bp.route("/update", methods=["PUT"])
 def update():
     """
@@ -32,3 +34,29 @@ def update():
         Response: 成功時200, 入力エラー400
     """
     return service.updatecommunityInfo()
+
+
+@management_bp.route("/<community_id>/tag/<tag_id>/chat", methods=["POST"])
+def post_chat(community_id, tag_id):
+    """
+    M23-1: チャット送信処理
+
+    Returns:
+        Response: 送信成功201, 入力不正400, 保存失敗500
+    """
+    return service.post_chat(community_id, tag_id, request.get_json())
+
+
+@management_bp.route("/<community_id>/tag/<tag_id>/chat", methods=["GET"])
+def get_chat(community_id, tag_id):
+    """
+    M23-2: チャット履歴取得処理
+
+    クエリ:
+        ?date=YYYY-MM-DD
+
+    Returns:
+        Response: 履歴取得成功200, エラー400/500
+    """
+    date = request.args.get("date", "").strip()
+    return service.get_chat_history(community_id, tag_id, date)

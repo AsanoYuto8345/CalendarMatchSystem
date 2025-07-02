@@ -1,7 +1,7 @@
 # backend/modules/community_management/community_management.py
 """
 C9 コミュニティ情報管理部
-このモジュールは SQLite データベースを用いてコミュニティ情報を永続的に管理します。
+このモジュールは SQLite データベースを用いてコミュニティ情報・テンプレートタグ・チャットデータを永続的に管理します。
 """
 
 import logging
@@ -9,39 +9,24 @@ from flask import request, jsonify, g
 import sqlite3
 import os
 import re
+import datetime
 
 logger = logging.getLogger(__name__)
 
-# SQLite ファイルのパス
 DB_PATH = os.path.join(os.path.dirname(__file__), "../../instance/messages.db")
 
-
 def get_db():
-    """
-    SQLite 接続を取得する（Flask の g オブジェクトにバインド）
-
-    Returns:
-        sqlite3.Connection: データベース接続
-    """
     if 'db' not in g:
         g.db = sqlite3.connect(DB_PATH)
         g.db.row_factory = sqlite3.Row
     return g.db
 
-
 def close_db(e=None):
-    """
-    SQLite 接続をクローズする
-    """
     db = g.pop('db', None)
     if db is not None:
         db.close()
 
-
 def init_db():
-    """
-    SQLite データベース初期化（テーブルがなければ作成）
-    """
     db = sqlite3.connect(DB_PATH)
     db.execute("""
         CREATE TABLE IF NOT EXISTS communities (
@@ -59,20 +44,27 @@ def init_db():
             FOREIGN KEY (community_id) REFERENCES communities(id)
         )
     """)
+    db.execute("""
+        CREATE TABLE IF NOT EXISTS chat_messages (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            community_id INTEGER NOT NULL,
+            tag_id INTEGER NOT NULL,
+            date TEXT NOT NULL,
+            sender_id TEXT NOT NULL,
+            message_content TEXT NOT NULL,
+            timestamp TEXT NOT NULL,
+            FOREIGN KEY (community_id) REFERENCES communities(id)
+        )
+    """)
     db.commit()
     db.close()
 
-
-# 初期化呼び出し
 init_db()
-
 
 class CommunityManagement:
     """
-    C9 コミュニティ情報管理部 管理クラス
-    - M2: コミュニティ登録処理
-    - M3: コミュニティ情報更新処理 
-    - M4: コミュニティ情報取得処理
+    コミュニティ管理部
+    - コミュニティ登録、テンプレートタグ編集、チャット履歴管理などの処理を担当
     """
 
     def register(self, name, image=None):
@@ -199,3 +191,67 @@ class CommunityManagement:
             "message": "コミュニティ情報を更新しました",
             "updated_tags": updated_tags_list
         }), 200
+
+    def post_chat(self, community_id, tag_id, data):
+        date = data.get("date", "").strip()
+        message = data.get("message", "").strip()
+        sender_id = data.get("sender_id", "").strip()
+
+        if not all([community_id.isdigit(), tag_id.isdigit(), date, message, sender_id]):
+            return jsonify({"post_status": False, "error": "必要な項目が不足しています。"}), 400
+
+        if len(message) > 200:
+            return jsonify({"post_status": False, "error": "半角英数字200文字以内で入力してください。"}), 400
+
+        db = get_db()
+        timestamp = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        try:
+            db.execute(
+                """
+                INSERT INTO chat_messages (community_id, tag_id, date, sender_id, message_content, timestamp)
+                VALUES (?, ?, ?, ?, ?, ?)
+                """,
+                (int(community_id), int(tag_id), date, sender_id, message, timestamp)
+            )
+            db.commit()
+        except Exception as e:
+            logger.warning(f"❌ チャット保存失敗: {e}")
+            return jsonify({"post_status": False, "error": "メッセージ保存中にエラーが発生しました。"}), 500
+
+        new_message = {
+            "sender_id": sender_id,
+            "sender_name": sender_id,
+            "message_content": message,
+            "timestamp": timestamp
+        }
+        return jsonify({"post_status": True, "new_message": new_message}), 201
+
+    def get_chat_history(self, community_id, tag_id, date):
+        if not all([community_id.isdigit(), tag_id.isdigit(), date]):
+            return jsonify({"error": "不正な入力です"}), 400
+
+        db = get_db()
+        try:
+            rows = db.execute(
+                """
+                SELECT sender_id, message_content, timestamp
+                FROM chat_messages
+                WHERE community_id = ? AND tag_id = ? AND date = ?
+                ORDER BY timestamp ASC
+                """,
+                (int(community_id), int(tag_id), date)
+            ).fetchall()
+        except Exception as e:
+            logger.warning(f"❌ チャット履歴取得失敗: {e}")
+            return jsonify({"error": "チャット履歴の取得に失敗しました。"}), 500
+
+        chat_history = [
+            {
+                "sender_id": row["sender_id"],
+                "sender_name": row["sender_id"],
+                "message_content": row["message_content"],
+                "timestamp": row["timestamp"]
+            } for row in rows
+        ]
+
+        return jsonify({"chat_history": chat_history}), 200

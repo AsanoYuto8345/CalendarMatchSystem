@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { FaCamera } from 'react-icons/fa';
 import axios from 'axios';
+import Cookies from 'js-cookie'; // ← 追加
 
 function CommunityJoin() {
   const [communityId, setCommunityId] = useState('');
@@ -8,9 +9,16 @@ function CommunityJoin() {
 
   const handleJoin = async (e) => {
     e.preventDefault();
+    const userId = Cookies.get('userId'); // ← Cookieから取得
+    if (!userId) {
+      alert('ログイン情報が見つかりません');
+      return;
+    }
+
     try {
       await axios.post('http://localhost:5001/api/community/join', {
-        community_name: communityId
+        community_name: communityId,
+        user_id: userId
       });
       setShowSuccessModal(true);
     } catch (error) {
