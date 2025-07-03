@@ -34,7 +34,9 @@ const TemplateTagEdit = ({ tagName = "", colorCode = "000000", onSubmit }) => {
           type="text"
           className="border px-3 py-2 w-full rounded"
           value={tag}
-          onChange={(e) => setTag(e.target.value)}
+          onChange={(e) => {
+            setTag(e.target.value);
+          }}
           placeholder="例: 会議, 作業時間"
         />
         <p className="text-sm text-gray-500 mt-1">日本語,英数字（20字以内）</p>
@@ -72,7 +74,7 @@ const TemplateTagEdit = ({ tagName = "", colorCode = "000000", onSubmit }) => {
         <button
           className="bg-white border px-6 py-2 rounded shadow hover:bg-gray-100"
           onClick={() => {
-            onSubmit(tagName, color);
+            onSubmit(tag, color);
           }}
         >
           完了

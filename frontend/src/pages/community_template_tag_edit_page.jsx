@@ -32,11 +32,12 @@ const TemplateTagEditPage = () => {
         {
           tag: tagName,
           template_tag_id: tagId,  
-          color_code: colorCode
+          colorCode: colorCode,
+          community_id: communityId
         }
       )
       .then((res) => {
-        navigate(`community/${communityId}/calendar/template_tag/view`);
+        navigate(`/community/${communityId}/template_tag/view`);
       })
       .catch((err) => {
         console.error(err);
@@ -49,10 +50,11 @@ const TemplateTagEditPage = () => {
 
   useEffect(() => {
     axios
-      .get(`${process.env.REACT_APP_API_SERVER_URL}/api/community/template_tags?template_tag_id=${tagId}`)
+      .get(`${process.env.REACT_APP_API_SERVER_URL}/api/community/template_tag_by_id?tag_id=${tagId}`)
       .then((res) => {
-        setTagName(res.data.tag || "");
-        setColorCode(res.data.color_code || "");
+        const template_tag = res.data.template_tag;
+        setTagName(template_tag.tag || "");
+        setColorCode(template_tag.color_code || "");
       })
       .catch((err) => {
         console.error(err);
