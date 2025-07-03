@@ -1,4 +1,3 @@
-# backend/modules/community_management/community_management.py
 """
 C9 コミュニティ情報管理部
 このモジュールは SQLite データベースを用いてコミュニティ情報・テンプレートタグ・チャットデータを永続的に管理します。
@@ -10,6 +9,7 @@ import sqlite3
 import os
 import re
 import datetime
+import uuid
 
 logger = logging.getLogger(__name__)
 
@@ -28,32 +28,45 @@ def close_db(e=None):
 
 def init_db():
     db = sqlite3.connect(DB_PATH)
+    # communities: UUID文字列を主キーとする
     db.execute("""
         CREATE TABLE IF NOT EXISTS communities (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            id TEXT PRIMARY KEY,
             name TEXT UNIQUE NOT NULL,
             image_path TEXT
         )
     """)
+    # template_tags: UUID文字列を主キーとし、community_idもTEXT
     db.execute("""
         CREATE TABLE IF NOT EXISTS template_tags (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            community_id INTEGER NOT NULL,
+            id TEXT PRIMARY KEY,
+            community_id TEXT NOT NULL,
             tag TEXT NOT NULL,
             color_code TEXT NOT NULL,
             FOREIGN KEY (community_id) REFERENCES communities(id)
         )
     """)
+      # members テーブル（モデルに合わせて id を主キーにした文字列型）
+    db.execute("""
+        CREATE TABLE IF NOT EXISTS members (
+            id TEXT PRIMARY KEY,
+            user_id TEXT NOT NULL,
+            community_id TEXT NOT NULL,
+            FOREIGN KEY (community_id) REFERENCES communities(id)
+        )
+    """)
+    # chat_messages: UUID文字列を主キー、community_id/tag_idはTEXT
     db.execute("""
         CREATE TABLE IF NOT EXISTS chat_messages (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            community_id INTEGER NOT NULL,
-            tag_id INTEGER NOT NULL,
+            id TEXT PRIMARY KEY,
+            community_id TEXT NOT NULL,
+            tag_id TEXT NOT NULL,
             date TEXT NOT NULL,
             sender_id TEXT NOT NULL,
             message_content TEXT NOT NULL,
             timestamp TEXT NOT NULL,
-            FOREIGN KEY (community_id) REFERENCES communities(id)
+            FOREIGN KEY (community_id) REFERENCES communities(id),
+            FOREIGN KEY (tag_id)       REFERENCES template_tags(id)
         )
     """)
     db.commit()
@@ -68,15 +81,6 @@ class CommunityManagement:
     """
 
     def get_communities_and_tags_by_user(self, user_id):
-        """
-        ユーザIDから所属コミュニティおよびそのテンプレートタグ一覧を取得する。
-
-        Args:
-            user_id (str): ユーザID
-
-        Returns:
-            Response: 所属コミュニティ情報＋タグ一覧（成功200、不正400）
-        """
         user_id = user_id.strip()
         if not user_id:
             return jsonify({"error": "ユーザIDが未指定です"}), 400  # E1
@@ -99,12 +103,13 @@ class CommunityManagement:
                 {"id": r["id"], "tag": r["tag"], "color_code": r["color_code"]} for r in tag_rows
             ]
             result.append({
-                "id": user_id,  # 出力：ユーザID
+                "id": user_id,
                 "community_name": row["community_name"],
                 "tags": tags
             })
 
         return jsonify({"result": True, "communities": result}), 200
+
     def register(self, name, image=None):
         if not name:
             return jsonify({"error": "コミュニティ名が未入力です"}), 400
@@ -112,15 +117,16 @@ class CommunityManagement:
             return jsonify({"error": "16文字以内にしてください"}), 400
 
         db = get_db()
+        # UUID を生成して INSERT
+        community_id = uuid.uuid4().hex
         try:
-            db.execute("INSERT INTO communities (name) VALUES (?)", (name,))
+            db.execute(
+                "INSERT INTO communities (id, name) VALUES (?, ?)",
+                (community_id, name)
+            )
             db.commit()
         except sqlite3.IntegrityError:
             return jsonify({"error": "既に存在します"}), 409
-
-        community_id = db.execute(
-            "SELECT id FROM communities WHERE name = ?", (name,)
-        ).fetchone()["id"]
 
         logger.info(f"✅ コミュニティ登録: {name}")
         return jsonify({
@@ -133,13 +139,13 @@ class CommunityManagement:
     def getcommunityInfo(self):
         community_id = request.args.get("community_id", "").strip()
 
-        if not community_id.isdigit():
+        if not community_id:
             return jsonify({"error": "コミュニティIDが未指定または不正です"}), 400
 
         db = get_db()
         row = db.execute(
             "SELECT name, image_path FROM communities WHERE id = ?",
-            (int(community_id),)
+            (community_id,)
         ).fetchone()
 
         if not row:
@@ -147,7 +153,7 @@ class CommunityManagement:
 
         tag_rows = db.execute(
             "SELECT tag, color_code FROM template_tags WHERE community_id = ?",
-            (int(community_id),)
+            (community_id,)
         ).fetchall()
         tag_list = [{"tag": r["tag"], "colorCode": r["color_code"]} for r in tag_rows]
 
@@ -160,14 +166,13 @@ class CommunityManagement:
 
     def updatecommunityInfo(self):
         data = request.get_json() or {}
-        community_id_str = data.get("community_id", "").strip()
+        community_id = data.get("community_id", "").strip()
         tags = data.get("tags", [])
 
-        if not community_id_str.isdigit():
+        if not community_id:
             return jsonify({"error": "無効なコミュニティIDです"}), 400
-        community_id = int(community_id_str)
-        db = get_db()
 
+        db = get_db()
         community_exists = db.execute(
             "SELECT id FROM communities WHERE id = ?", (community_id,)
         ).fetchone()
@@ -185,14 +190,14 @@ class CommunityManagement:
         for tag_data in tags:
             tag_id = tag_data.get("id")
             tag_name = tag_data.get("tag", "").strip()
-            color_code = tag_data.get("colorCode", "#000000").strip()
+            color_code = tag_data.get("colorCode", "000000").strip()
 
             if not tag_name:
                 return jsonify({"error": "タグ名が未入力です"}), 400
             if len(tag_name) > 20:
                 return jsonify({"error": "タグは20文字以内にしてください"}), 400
             if not re.fullmatch(r"^#[0-9a-fA-F]{6}$", color_code):
-                color_code = "#000000"
+                color_code = "000000"
 
             if tag_id and tag_id in current_tags:
                 if current_tags[tag_id] != tag_name:
@@ -204,16 +209,13 @@ class CommunityManagement:
                 updated_tags_list.append({"id": tag_id, "tag": tag_name, "colorCode": color_code})
                 del current_tags[tag_id]
             else:
-                try:
-                    cursor = db.execute(
-                        "INSERT INTO template_tags (community_id, tag, color_code) VALUES (?, ?, ?)",
-                        (community_id, tag_name, color_code)
-                    )
-                    new_id = cursor.lastrowid
-                    updated_tags_list.append({"id": new_id, "tag": tag_name, "colorCode": color_code})
-                    logger.info(f"✅ 新規タグ追加: ID={new_id}, Name='{tag_name}'")
-                except sqlite3.IntegrityError:
-                    return jsonify({"error": f"タグ '{tag_name}' は既に存在します"}), 409
+                new_id = uuid.uuid4().hex
+                db.execute(
+                    "INSERT INTO template_tags (id, community_id, tag, color_code) VALUES (?, ?, ?, ?)",
+                    (new_id, community_id, tag_name, color_code)
+                )
+                logger.info(f"✅ 新規タグ追加: ID={new_id}, Name='{tag_name}'")
+                updated_tags_list.append({"id": new_id, "tag": tag_name, "colorCode": color_code})
 
         for tag_id_to_delete in current_tags.keys():
             db.execute(
@@ -235,21 +237,20 @@ class CommunityManagement:
         message = data.get("message", "").strip()
         sender_id = data.get("sender_id", "").strip()
 
-        if not all([community_id.isdigit(), tag_id.isdigit(), date, message, sender_id]):
+        if not all([community_id, tag_id, date, message, sender_id]):
             return jsonify({"post_status": False, "error": "必要な項目が不足しています。"}), 400
-
-        if len(message) > 200:
-            return jsonify({"post_status": False, "error": "半角英数字200文字以内で入力してください。"}), 400
 
         db = get_db()
         timestamp = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         try:
+            new_id = uuid.uuid4().hex
             db.execute(
                 """
-                INSERT INTO chat_messages (community_id, tag_id, date, sender_id, message_content, timestamp)
-                VALUES (?, ?, ?, ?, ?, ?)
+                INSERT INTO chat_messages
+                  (id, community_id, tag_id, date, sender_id, message_content, timestamp)
+                VALUES (?, ?, ?, ?, ?, ?, ?)
                 """,
-                (int(community_id), int(tag_id), date, sender_id, message, timestamp)
+                (new_id, community_id, tag_id, date, sender_id, message, timestamp)
             )
             db.commit()
         except Exception as e:
@@ -265,7 +266,7 @@ class CommunityManagement:
         return jsonify({"post_status": True, "new_message": new_message}), 201
 
     def get_chat_history(self, community_id, tag_id, date):
-        if not all([community_id.isdigit(), tag_id.isdigit(), date]):
+        if not all([community_id, tag_id, date]):
             return jsonify({"error": "不正な入力です"}), 400
 
         db = get_db()
@@ -277,7 +278,7 @@ class CommunityManagement:
                 WHERE community_id = ? AND tag_id = ? AND date = ?
                 ORDER BY timestamp ASC
                 """,
-                (int(community_id), int(tag_id), date)
+                (community_id, tag_id, date)
             ).fetchall()
         except Exception as e:
             logger.warning(f"❌ チャット履歴取得失敗: {e}")
@@ -295,28 +296,19 @@ class CommunityManagement:
         return jsonify({"chat_history": chat_history}), 200
 
     def get_community_members(self, community_id):
-        """
-        M7: 指定されたコミュニティに所属するユーザ一覧を取得する。
-
-        Args:
-            community_id (str): コミュニティID（文字列）
-
-        Returns:
-            Response: 所属メンバー一覧（成功200, 入力不正400, 未存在404）
-        """
-        if not community_id.isdigit():
+        if not community_id:
             return jsonify({"error": "無効なコミュニティIDです"}), 400
 
         db = get_db()
         community_exists = db.execute(
-            "SELECT 1 FROM communities WHERE id = ?", (int(community_id),)
+            "SELECT 1 FROM communities WHERE id = ?", (community_id,)
         ).fetchone()
         if not community_exists:
             return jsonify({"error": f"ID {community_id} のコミュニティは存在しません"}), 404
 
         members = db.execute(
             "SELECT user_id FROM members WHERE community_id = ?",
-            (int(community_id),)
+            (community_id,)
         ).fetchall()
 
         member_list = [row["user_id"] for row in members]
