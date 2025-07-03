@@ -15,12 +15,13 @@ const CommunityCalendarTagViewPage = () => {
   const navigate = useNavigate();
   const [tagList, setTagList] = useState([]);
 
-  const [memberList, setMemberList] = useState([]); // メンバーリストは、タグを投稿したユーザー情報から構築します。
+  // メンバーリストは不要になったため削除
+  // const [memberList, setMemberList] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
   useEffect(() => {
-    const fetchTagAndMemberData = async () => {
+    const fetchTagData = async () => { // 関数名を fetchTagAndMemberData から fetchTagData に変更
       try {
         // 日付形式の検証 (例:YYYY-MM-DD)
         if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) {
@@ -37,55 +38,59 @@ const CommunityCalendarTagViewPage = () => {
         if (fetchedTags.length === 0) {
           setError("この日付にはタグがありません。");
           setTagList([]);
-          setMemberList([]);
+          // setMemberList([]); // メンバーリストのクリアも不要
           setLoading(false);
           return;
         }
 
-        // タグを投稿したユーザーIDの重複を排除してリスト化
-        const uniqueSubmitterIds = [...new Set(fetchedTags.map(tag => tag.submitter_id))];
+        // メンバーに関する処理を全て削除
+        // // タグを投稿したユーザーIDの重複を排除してリスト化
+        // const uniqueSubmitterIds = [...new Set(fetchedTags.map(tag => tag.submitter_id))];
 
-        // 各submitter_idに対してC8 ユーザ情報管理部 M2 の user_data_search を呼び出し、ユーザー名を取得
-        const userPromises = uniqueSubmitterIds.map(async (userId) => {
-          try {
-            // C8 ユーザ情報管理部 M2 ユーザ情報検索処理のエンドポイントは /api/users/search で、クエリパラメータ 'id' を使用
-            const userRes = await axios.get(`${process.env.REACT_APP_API_SERVER_URL}/api/users/search`, {
-              params: { id: userId }
-            });
-            return userRes.data; // ユーザーデータにはid, name, email, iconなどが含まれると想定
-          } catch (userErr) {
-            console.error(`ユーザー情報取得失敗 for ID ${userId}: `, userErr);
-            return null; // 取得失敗した場合はnullを返す
-          }
-        });
+        // // 各submitter_idに対してC8 ユーザ情報管理部 M2 の user_data_search を呼び出し、ユーザー名を取得
+        // const userPromises = uniqueSubmitterIds.map(async (userId) => {
+        //   try {
+        //     // C8 ユーザ情報管理部 M2 ユーザ情報検索処理のエンドポイントは /api/users/search で、クエリパラメータ 'id' を使用
+        //     const userRes = await axios.get(`${process.env.REACT_APP_API_SERVER_URL}/api/users/search`, {
+        //       params: { id: userId }
+        //     });
+        //     return userRes.data; // ユーザーデータにはid, name, email, iconなどが含まれると想定
+        //   } catch (userErr) {
+        //     console.error(`ユーザー情報取得失敗 for ID ${userId}: `, userErr);
+        //     return null; // 取得失敗した場合はnullを返す
+        //   }
+        // });
 
-        const usersData = await Promise.all(userPromises);
-        // 取得できたユーザーデータのみをフィルタリングし、memberListを構築
-        const validUsers = usersData.filter(user => user !== null);
-        setMemberList(validUsers.map(user => ({ user_id: user.id, user_name: user.name, user_icon_url: user.icon })));
+        // const usersData = await Promise.all(userPromises);
+        // // 取得できたユーザーデータのみをフィルタリングし、memberListを構築
+        // const validUsers = usersData.filter(user => user !== null);
+        // setMemberList(validUsers.map(user => ({ user_id: user.id, user_name: user.name, user_icon_url: user.icon })));
 
-        // タグリストにユーザー名を付与
-        const tagsWithSubmitterNames = fetchedTags.map(tag => {
-          const submitter = validUsers.find(user => user.id === tag.submitter_id);
-          return {
-            ...tag,
-            submitter_name: submitter ? submitter.name : '不明なユーザー'
-          };
-        });
-        setTagList(tagsWithSubmitterNames);
+        // // タグリストにユーザー名を付与
+        // const tagsWithSubmitterNames = fetchedTags.map(tag => {
+        //   const submitter = validUsers.find(user => user.id === tag.submitter_id);
+        //   return {
+        //     ...tag,
+        //     submitter_name: submitter ? submitter.name : '不明なユーザー'
+        //   };
+        // });
+        // setTagList(tagsWithSubmitterNames); // メンバー情報を付与しないタグリストをセット
+
+        // 単純に取得したタグリストをセットする
+        setTagList(fetchedTags);
 
       } catch (err) {
         console.error("情報の取得に失敗しました: ", err);
         setError("情報の取得に失敗しました。");
         if (err.response && err.response.status === 404) {
-          setError("この日付にはタグがありません。"); /*  */
+          setError("この日付にはタグがありません。");
         }
       } finally {
         setLoading(false);
       }
     };
 
-    fetchTagAndMemberData();
+    fetchTagData(); // 関数名を変更
   }, [communityId, date, navigate]);
 
   const handleTagClick = (tagId) => {
@@ -114,7 +119,7 @@ const CommunityCalendarTagViewPage = () => {
     <TagListViewByDate
       date={date}
       tagList={tagList}
-      memberList={memberList}
+      memberList={[]} // memberList は空の配列を渡すか、propsから削除する
       onTagClick={handleTagClick}
       onEditClick={handleEditClick}
       onAddTagClick={handleAddTagClick}

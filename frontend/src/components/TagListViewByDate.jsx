@@ -51,17 +51,6 @@ const TagListViewByDate = ({ date, tagList, memberList, onTagClick, onEditClick,
         <p className="text-gray-600 mb-4">この日付にはタグがありません。</p>
       )}
 
-      <h3 className="text-xl font-semibold mb-3 mt-6">メンバー</h3>
-      {memberList.length > 0 ? (
-        memberList.map((member, index) => (
-          <div key={index} className="flex items-center bg-gray-100 p-3 rounded-md mb-2">
-            <img src={member.user_icon_url} alt={member.user_name} className="w-8 h-8 rounded-full mr-3" />
-            <span>{member.user_name}</span>
-          </div>
-        ))
-      ) : (
-        <p className="text-gray-600 mb-4">メンバーがいません。</p>
-      )}
 
       <div className="flex justify-center space-x-4 mt-6">
         <button onClick={onEditClick} className="px-6 py-2 bg-green-500 text-white rounded hover:bg-green-600">
