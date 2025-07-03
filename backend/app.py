@@ -1,7 +1,8 @@
-from flask import Flask, jsonify
+from flask import Flask, jsonify, send_from_directory
 from flask_cors import CORS
 # ← ここを変更
-from extentions import db  
+from extentions import db
+import os
 
 app = Flask(__name__)
 CORS(app)
@@ -19,6 +20,11 @@ class Message(db.Model):
 
 
 db_initialized = False
+
+@app.route('/uploads/<path:filename>')
+def serve_uploads(filename):
+    uploads_dir = os.path.join(os.path.dirname(__file__), 'uploads')
+    return send_from_directory(uploads_dir, filename, as_attachment=False)
 
 @app.before_request
 def init_db():
