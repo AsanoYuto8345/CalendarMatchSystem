@@ -92,9 +92,9 @@ def get_community_info_by_tag_id():
     """
     return service.get_community_info_by_tag_id()
 
-@community_bp.route("/members_by_tag", methods=["GET"])
-def get_community_members_by_tag():
+@community_bp.route("/template_tag_by_id", methods=["GET"])
+def get_template_tag_by_id():
     """
-    M12: テンプレートタグIDからコミュニティメンバー取得
+    M12: テンプレートタグIDからテンプレートタグ情報
     """
-    return service.get_community_members_by_tag_id()
+    return service.get_template_tag_info_by_id()

@@ -314,3 +314,25 @@ class CommunityManagement:
         member_list = [row["user_id"] for row in members]
 
         return jsonify({"result": True, "members": member_list}), 200
+
+    def get_template_tag_info_by_id(self, template_tag_id):
+        if not template_tag_id:
+            return jsonify({"error": "テンプレートタグIDが未入力です"})
+        
+        db = get_db()
+        template_tag = db.execute(
+            "SELECT id, tag, color_code, community_id FROM template_tags WHERE id = ?",
+            (template_tag_id,)
+        ).fetchone()
+        
+        if not template_tag:
+            return jsonify({"error": f"ID {template_tag_id} のテンプレートタグは存在しません"}), 404
+        
+        template_tag = {
+            "id": template_tag["id"],
+            "tag": template_tag["tag"],
+            "color_code": template_tag["color_code"],
+            "community_id": template_tag["community_id"]
+        }
+        
+        return jsonify({"result": True, "template_tag": template_tag})

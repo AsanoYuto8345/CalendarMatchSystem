@@ -317,10 +317,10 @@ class CommunityService:
         cm = CommunityManagement()
         return cm.get_community_info_by_tag_id(tag_id)
 
-    def get_community_members_by_tag_id(self):
+    def get_template_tag_info_by_id(self):
         """
-        M12: テンプレートタグIDからコミュニティメンバー取得
+        M12: テンプレートタグIDからテンプレートタグ情報
         """
         tag_id = request.args.get("tag_id", "").strip()
         cm = CommunityManagement()
-        return cm.get_community_members_by_tag_id(tag_id)
+        return cm.get_template_tag_info_by_id(tag_id)
