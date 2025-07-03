@@ -15,22 +15,30 @@ const TemplateTagViewPage = () => {
   // テンプレートタグ一覧を保持する state
   const [templateTags, setTemplateTags] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [deleteCount, setDeleteCount] = useState(true);
   const [error, setError] = useState("");
 
   const onClickEdit = (tagId) => {
-    navigate(`/community/${communityId}/template_tag/${tagId}/edit`);
+    navigate(`/community/${communityId}/calendar/template_tag/${tagId}/edit`);
   }
 
   const onClickCreate = () => {
-    navigate(`/community/${communityId}/template_tag/create`);
+    navigate(`/community/${communityId}/calendar/template_tag/create`);
   }
 
   const onClickDelete = (tagId) => {
     setLoading(true);
     axios
-      .delete(`${process.env.REACT_APP_API_SERVER_URL}/api/community/${communityId}/template_tags/${tagId}`)
+      .delete(`${process.env.REACT_APP_API_SERVER_URL}/api/community/template_tags`,
+        {
+          data: { 
+            "template_tag_id": tagId,
+            "community_id": communityId
+           }
+        }
+      )
       .then((res) => {
-        navigate(`/community/${communityId}/template_tag/view`);
+        setDeleteCount(setDeleteCount + 1);
       })
       .catch((err) => {
         console.error(err);
@@ -45,9 +53,10 @@ const TemplateTagViewPage = () => {
   // 初回レンダリング時に API からテンプレートタグを取得
   useEffect(() => {
     axios
-      .get(`${process.env.REACT_APP_API_SERVER_URL}/api/community/${communityId}/template_tags`)
+      .get(`${process.env.REACT_APP_API_SERVER_URL}/api/community/template_tags?community_id=${communityId}`)
       .then((res) => {
-        setTemplateTags(res.data.template_tags || []);
+        console.log(res.data.tags);
+        setTemplateTags(res.data.tags || []);
       })
       .catch((err) => {
         console.error(err);
@@ -56,7 +65,7 @@ const TemplateTagViewPage = () => {
       .finally(() => {
         setLoading(false);
       });
-  }, [communityId]);
+  }, [communityId, deleteCount]);
 
   // ローディング中
   if (loading) return <div className="p-4">読み込み中...</div>;

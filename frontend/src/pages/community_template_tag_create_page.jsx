@@ -26,14 +26,15 @@ const TemplateTagCreatePage = () => {
    */
     setLoading(true);
     axios
-      .post(`${process.env.REACT_APP_API_SERVER_URL}/api/community/${communityId}/template_tags}`,
+      .post(`${process.env.REACT_APP_API_SERVER_URL}/api/community/template_tags`,
         {
-          tag_name: tagName,
-          color_code: colorCode
+          "tag": tagName,
+          "colorCode": colorCode,
+          "community_id": communityId
         }
       )
       .then((res) => {
-        navigate(`community/${communityId}/calendar/template_tag/view`);
+        navigate(`/community/${communityId}/template_tag/view`);
       })
       .catch((err) => {
         console.error(err);

@@ -26,14 +26,14 @@ const TemplateTagView = ({ tags = [], onClickEdit, onClickCreate, onClickDelete 
             {/* タグ名（背景色にカラーを適用） */}
             <input
               type="text"
-              value={tag.name}
+              value={tag.tag}
               readOnly
               className="border px-3 py-2 w-full rounded font-semibold text-white"
               style={{
-                backgroundColor: `#${tag.color}`,
+                backgroundColor: `#${tag.color_code}`,
                 textShadow: "0 0 2px black", // 黒いアウトライン風のシャドウを追加
               }}
-              title={`カラーコード: #${tag.color}`}
+              title={`カラーコード: #${tag.color_code}`}
             />
 
             {/* 編集ボタン */}
