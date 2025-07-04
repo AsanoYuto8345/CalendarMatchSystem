@@ -26,9 +26,18 @@ const TagEditPage = () => {
   // タグ一覧取得
   useEffect(() => {
     axios
-      .get(`${process.env.REACT_APP_API_SERVER_URL}/api/community/${communityId}/calendar/${date}/tags`)
+      .get(`${process.env.REACT_APP_API_SERVER_URL}/api/${communityId}/calendar/tag/get/${userId}?date=${date}`)
       .then((res) => {
-        setTagList(res.data.tags || []);
+        
+        const getTags = res.data.data;
+
+        const convertedTags = getTags.map(tag => ({
+          ...tag,
+          tag: tag.name,
+          color_code: tag.color,
+        }));
+
+        setTagList(convertedTags || []);
       })
       .catch((err) => {
         console.error(err);
@@ -40,16 +49,15 @@ const TagEditPage = () => {
   }, [communityId]);
 
   // タグ追加API呼び出し
-  const handleSubmit = (selectedId) => {
-    if (!selectedId) return;
+  const handleSubmit = (selectedTag) => {
+    if (!selectedTag) return;
 
     axios
-      .delete(`${process.env.REACT_APP_API_SERVER_URL}/api/calendar/${date}/tags`, {
-        tag_id: selectedId,
-        user_id: userId
+      .delete(`${process.env.REACT_APP_API_SERVER_URL}/api/${communityId}/calendar/tag/delete`, {
+        data: {tag_id: selectedTag.id}
       })
       .then(() => {
-        navigate(`/community/${communityId}/calendar/${date}/tags/post/complate`);
+        navigate(`/community/${communityId}/calendar/${date}/tags/edit/complate`);
       })
       .catch((err) => {
         console.error(err);
@@ -58,7 +66,7 @@ const TagEditPage = () => {
   };
 
   const handleClose = () => {
-    navigate(`/community/${communityId}/calendar/${date}/tags/view`);
+    navigate(`/community/${communityId}/calendar/tags/${date}`);
   }
 
   if (loading) return <div className="p-4">読み込み中...</div>;
@@ -70,6 +78,7 @@ const TagEditPage = () => {
       date={date}
       onSubmit={handleSubmit}
       onClickClose={handleClose}
+      title={"投稿タグ削除"}
     />
   );
 };

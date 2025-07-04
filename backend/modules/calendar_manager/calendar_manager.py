@@ -1,5 +1,6 @@
 # C10 カレンダー情報管理部 CalendarManagerクラス  担当: 角田 一颯, 浅野勇翔
 from extentions import db
+import traceback
 
 class Tag(db.Model):
     """
@@ -83,7 +84,7 @@ class CalendarManager:
             dict: 処理結果 (`result: bool`, `message: str`)
         """
         if not tag_id:
-            return {"result": False, "message": "タグIDと表示名は必須です。"}
+            return {"result": False, "message": "タグIDは必須です。"}
 
         try:
             # tag_idが一致するものを削除
@@ -182,3 +183,23 @@ class CalendarManager:
         except Exception as e:
             self.db.session.rollback()
             return {"result": False, "message": f"タグマッチングの検索に失敗しました: {str(e)}"}
+        
+    def find_user_date_community(self, community_id, date, user_id):
+        for key, val in [("community_id", community_id), ("date", date), ("user_id", user_id)]:
+            if not val:
+                return {"result": False, "message": f"{key} が未指定です。"}
+            
+        try:
+            query = Tag.query\
+                       .filter_by(community_id=community_id, date=date, submitter_id=user_id)
+            tags = query.all()
+            serialized = [t.to_dict() for t in tags]
+            
+            if serialized:
+                return {"data": serialized, "result": True, "message": "タグ取得成功"}
+            else:
+                return {"data": [], "result": True, "message": "タグが見つかりませんでした"}
+        except Exception as e:
+            self.db.session.rollback()
+            print(traceback.format_exc())
+            return {"result": False, "message": f"タグ検索に失敗しました: {str(e)}"}

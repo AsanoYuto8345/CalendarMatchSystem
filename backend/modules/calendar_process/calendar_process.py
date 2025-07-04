@@ -2,19 +2,26 @@
 
 import requests
 import uuid
+import os
+
+from dotenv import load_dotenv
 
 class CalenderProcess:
     """
     カレンダー情報処理部
     タグ保存や削除の要求をC10 カレンダー情報管理部に送信する
     """
-
-    def __init__(self, base_url="http://localhost:5001/api/calendar-manager"):
+    
+    
+    def __init__(self, base_url="/api/calendar-manager"):
         """
         Args:
             base_url (str): 管理部APIのベースURL
         """
-        self.base_url = base_url
+        
+        load_dotenv()
+        url_base = os.getenv('FLASK_URL')
+        self.base_url = url_base + base_url
 
     def tag_add(self, tag_name, tag_color, submitter_id, community_id, date):
         """
@@ -83,7 +90,7 @@ class CalenderProcess:
         
         Args:
             community_id (str): コミュニティID
-            date (str)
+            date (str): 日付
         Returns:
             tuple[bool, dict]: (成功可否, 管理部からの応答内容)
         """
@@ -101,3 +108,21 @@ class CalenderProcess:
                 return False, response.json()
         except Exception as e:
             return False, {"error": "通信エラー", "details": str(e)}
+        
+    def tag_get_from_community_date_user(self, community_id, date, user_id):
+        try:
+            response = requests.get(
+                f"{self.base_url}/tags/user",
+                json={
+                    "community_id": community_id,
+                    "date": date,
+                    "user_id": user_id
+                }
+            )
+            if response.status_code == 200:
+                return True, response.json()
+            else:
+                return False, response.json()
+        except Exception as e:
+            return False, {"error": "通信エラー", "details": str(e)}
+         

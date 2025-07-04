@@ -199,3 +199,20 @@ def manager_find_matching_tags():
     else:
         # 検索例外のみ500
         return jsonify(result), 500
+    
+@calendar_manager_bp.route('/tags/user', methods=['GET'])
+def find_tags_by_user_date_community():
+    data = request.get_json()
+    
+    community_id = data.get("community_id")
+    date = data.get("date")
+    user_id = data.get("user_id")
+    
+    manager = CalendarManager(db)
+    result = manager.find_user_date_community(community_id, date, user_id)
+    
+    if result["result"]:
+        return jsonify(result), 200
+    else:
+        return jsonify(result), 500
+    

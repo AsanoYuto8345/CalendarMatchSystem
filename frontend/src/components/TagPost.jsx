@@ -12,7 +12,7 @@ import { useState } from "react";
  * - onSubmit: (selectedTagId: string) => void - 完了時に呼ばれる関数
  * - onClickClose: () => void - ×ボタンを押したときに呼ばれる関数
  */
-const TagPost = ({ tagList = [], date ,onSubmit, onClickClose }) => {
+const TagPost = ({ tagList = [], date ,onSubmit, onClickClose, title = "テンプレートタグ一覧" }) => {
   const [selectedTag, setSelectedTag] = useState({});
 
   return (
@@ -24,7 +24,7 @@ const TagPost = ({ tagList = [], date ,onSubmit, onClickClose }) => {
       </div>
 
       {/* タイトル */}
-      <h2 className="text-center text-lg font-semibold mb-4">テンプレートタグ一覧</h2>
+      <h2 className="text-center text-lg font-semibold mb-4">{title}</h2>
 
       {/* ラジオボタン付きタグリスト */}
       <div className="space-y-3 mb-6">
