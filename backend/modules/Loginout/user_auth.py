@@ -112,12 +112,16 @@ class UserAuth:
             return 400, ""
 
         try:
-            payload = {"user_id": "dummy_user_id_for_auth"}
+            # 修正: C8のmake_sidがemailを受け取るため、dummy_user_id_for_auth ではなく emailをキーとして渡す
+            # M1認証主処理の意図によっては、より適切なユーザー情報（例えば匿名ユーザーのメールアドレスなど）を渡す必要があるかもしれません。
+            # ここでは便宜上、ダミーのメールアドレスを使用します。
+            payload = {"email": "dummy@example.com"} # M1のダミーSID作成用途であれば、ダミーメールアドレスを渡す
             response = self.http_client.post(f"{self.C8_BASE_URL}/make_sid", json=payload)
             response.raise_for_status()
 
             response_data = response.json()
-            sid = response_data.get("session_id", "")
+            # C8のmake_sidが"sid"キーを返すことを想定
+            sid = response_data.get("sid", "") # C8のmake_sidが"sid"を返すように変更されているため
 
             if sid:
                 logger.info(f"SID generated successfully for handle_auth: {sid}")
@@ -125,12 +129,16 @@ class UserAuth:
             else:
                 logger.error("C8 did not return a session ID for handle_auth.")
                 return 500, ""
-        except Exception as e: # モックとの互換性のため、汎用Exceptionで捕捉
+        except requests.exceptions.RequestException as e: # requests特有のエラーを捕捉
             logger.error(f"Error calling C8 make_sid for handle_auth: {e}")
             return 500, ""
         except json.JSONDecodeError as e:
             logger.error(f"Error decoding JSON from C8 response for handle_auth: {e}")
             return 500, ""
+        except Exception as e: # その他の予期せぬエラー
+            logger.error(f"An unexpected error occurred in handle_auth: {e}")
+            return 500, ""
+
 
     def signin_user(self, email: str, pw: str) -> tuple[bool, str]:
         """
@@ -159,60 +167,70 @@ class UserAuth:
         user_info = None
         try:
             # C8のget_user_by_emailエンドポイントを呼び出し
-            response = self.http_client.get(f"{self.C8_BASE_URL}/users_by_email/{email}")
+            # user_data_management.py の user_data_search が user_id 検索のため、
+            # C8にメールアドレスで検索するAPIエンドポイントが存在することを前提とする
+            response = self.http_client.get(f"{self.C8_BASE_URL}/users/search_by_email?email={email}")
             
             # C8が204 (No Content) を返した場合、ユーザーは存在しない（設計書E2に該当）
             if response.status_code == 204:
-                logger.warning(f"Authentication failed: User with email '{email}' not found.")
+                logger.warning(f"Authentication failed: User with email '{email}' not found. (E2)")
                 return False, ""
             
             response.raise_for_status() # それ以外のHTTPエラーがあれば例外を発生させる
 
             user_info = response.json()
-            user_id = user_info.get("user_id")
-            hashed_password = user_info.get("hashed_password")
+            # C8のuser_data_searchは"email"と"password"を返すため、それを使用
+            retrieved_email = user_info.get("email")
+            hashed_password_from_db = user_info.get("password") # C8のuser_data_searchが返すキーは"password"
 
-            if not user_id or not hashed_password:
+            if not retrieved_email or not hashed_password_from_db:
                 logger.error(f"Error: Incomplete user data from C8 for email: {email}")
                 return False, ""
                 
-        except Exception as e: # モックとの互換性のため、汎用Exceptionで捕捉
+        except requests.exceptions.RequestException as e: # requests特有のエラーを捕捉
             logger.error(f"Error during C8 user info retrieval for email {email}: {e}")
             return False, ""
         except json.JSONDecodeError as e:
             logger.error(f"Error decoding JSON from C8 get_user_by_email: {e}")
             return False, ""
+        except Exception as e: # その他の予期せぬエラー
+            logger.error(f"An unexpected error occurred during user info retrieval: {e}")
+            return False, ""
 
 
         # パスワードの検証
-        if not self.password_hasher.verify_password(pw, user_info.get("hashed_password", "")):
+        if not self.password_hasher.verify_password(pw, hashed_password_from_db):
             logger.warning("Authentication failed: Invalid password.")
             return False, ""
 
         # 認証成功: C8 を使ってセッションIDを作成し、永続化する
         session_id = ""
         try:
-            payload = {"user_id": user_info["user_id"]}
+            # 修正: C8のmake_sidがemailを受け取るように変更されたため、emailを渡す
+            payload = {"email": email} # SID作成時にuser_idではなくemailを使用
             response = self.http_client.post(f"{self.C8_BASE_URL}/make_sid", json=payload)
             response.raise_for_status()
 
             response_data = response.json() 
-            session_id = response_data.get("session_id", "")
+            session_id = response_data.get("sid", "") # C8のmake_sidが"sid"を返すことを想定
 
             if not session_id:
                 logger.error("C8 did not return a session ID after successful user authentication.")
                 return False, "" # C8がSIDを返さなかった場合
 
-        except Exception as e: # モックとの互換性のため、汎用Exceptionで捕捉
-            logger.error(f"Error during C8 SID creation for user {user_info.get('user_id', 'N/A')}: {e}")
+        except requests.exceptions.RequestException as e: # requests特有のエラーを捕捉
+            logger.error(f"Error during C8 SID creation for email {email}: {e}")
             return False, ""
         except json.JSONDecodeError as e:
             logger.error(f"Error decoding JSON from C8 make_sid: {e}")
             return False, ""
+        except Exception as e: # その他の予期せぬエラー
+            logger.error(f"An unexpected error occurred during SID creation: {e}")
+            return False, ""
         
         # セッションIDをC8から取得し、フロントエンドに返すのがC2の役割。
         # C2内でのセッション情報のキャッシュは行いません。
-        logger.info(f"User '{user_info['user_id']}' signed in successfully. SID: {session_id}")
+        logger.info(f"User '{email}' signed in successfully. SID: {session_id}")
         return True, session_id
 
 
@@ -240,7 +258,7 @@ class UserAuth:
 
         try:
             # C8のセッションを削除するAPIを呼び出す
-            response = self.http_client.delete(f"{self.C8_BASE_URL}/delete_sid/{sid}")
+            response = self.http_client.delete(f"{self.C8_BASE_URL}/sid/delete", json={"sid": sid}) # DELETEリクエストでJSONボディを送信
             response.raise_for_status() # HTTPエラー（4xx, 5xx）があれば例外を発生させる
 
             # C8が200 OKまたは204 No Contentを返せば成功とみなす
@@ -251,9 +269,12 @@ class UserAuth:
                 logger.error(f"Unexpected status code from C8 delete_sid for SID '{sid}': {response.status_code} - {response.text}")
                 return False # 予期せぬステータスコードは失敗
 
-        except Exception as e: # C8との通信エラー、JSONパースエラーなどを捕捉
+        except requests.exceptions.RequestException as e: # requests特有のエラーを捕捉
             logger.error(f"Failed to delete SID '{sid}' from C8: {e}")
             return False # C8との通信自体が失敗した場合はFalse
         except json.JSONDecodeError as e:
             logger.error(f"Error decoding JSON from C8 delete_sid for SID '{sid}': {e}")
             return False # C8からのレスポンスが不正なJSONだった場合もFalse
+        except Exception as e: # その他の予期せぬエラー
+            logger.error(f"An unexpected error occurred during SID deletion: {e}")
+            return False
