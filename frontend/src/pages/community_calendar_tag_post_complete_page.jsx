@@ -13,7 +13,7 @@ const TagPostCompleteMesaagePage = () => {
   const navigate = useNavigate();
 
   const handleClose = () => {
-    navigate(`/community/${communityId}/calendar/${date}/tags/view`);
+    navigate(`/community/${communityId}/calendar/tags/${date}/`);
   }
 
   return (
