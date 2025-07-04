@@ -9,38 +9,37 @@ class Tag(db.Model):
     """
     __tablename__ = 'tags'
 
-    id            = db.Column(db.String(50), unique=True, primary_key=True)
-    name          = db.Column(db.String(100), nullable=False)
-    color         = db.Column(db.String(6),   nullable=False)
-    submitter_id  = db.Column(db.String(100), nullable=False)
-    community_id  = db.Column(db.String(100), nullable=False)
-    date          = db.Column(db.String(10),  nullable=False)  # 'YYYY-MM-DD' 形式
-    notified      = db.Column(db.Boolean,     nullable=False, default=False)
+    id           = db.Column(db.String(50),  unique=True, primary_key=True)
+    name         = db.Column(db.String(100), nullable=False)
+    color        = db.Column(db.String(6),   nullable=False)
+    submitter_id = db.Column(db.String(100), nullable=False)
+    community_id = db.Column(db.String(100), nullable=False)
+    date         = db.Column(db.String(100), nullable=False)
 
     def __repr__(self):
-        return f"<Tag(id='{self.id}', name='{self.name}', notified={self.notified})>"
+        return f"<Tag(id='{self.id}', name='{self.name}')>"
 
     def to_dict(self):
         """
         この Tag オブジェクトを JSON 化可能な dict に変換する
         """
         return {
-            "id":           self.id,
-            "name":         self.name,
-            "color":        self.color,
+            "id": self.id,
+            "name": self.name,
+            "color": self.color,
             "submitter_id": self.submitter_id,
             "community_id": self.community_id,
-            "date":         self.date,
-            "notified":     self.notified,
+            "date": self.date
         }
-        
+
+
 class CalendarManager:
     """
     C10 カレンダー情報管理部
-
     C5 カレンダー情報処理部からタグ編集、タグ追加、タグ削除の命令を受け、
     DBにアクセスし、DBを更新する。
     """
+
     def __init__(self, db_instance):
         """
         Args:
@@ -48,48 +47,39 @@ class CalendarManager:
         """
         self.db = db_instance
 
-
     def request_calendar_data(self, community_id, date):
         """
         M2 カレンダー情報要求
-        
-        Args: 
+        Args:
             community_id (str): コミュニティID
             date (date): 日付
-            
         Returns:
-            dict: 処理結果 (data: List[Tag],`result: bool`, `message: str`)
+            dict: 処理結果 (data: List[Tag], result: bool, message: str)
         """
-        
         if not community_id or not date:
             return {"result": False, "message": "コミュニティIDと日付は必須です"}
-        
+
         try:
-            tags = Tag.query.filter_by(community_id=community_id).filter_by(date=date).all()    
+            tags = Tag.query.filter_by(community_id=community_id).filter_by(date=date).all()
             serialized_tag = [tag.to_dict() for tag in tags]
-            return  {"data": serialized_tag, "result": True, "message": "タグの検索に成功しました"}
+            return {"data": serialized_tag, "result": True, "message": "タグの検索に成功しました"}
         except Exception as e:
             self.db.session.rollback()
             return {"result": False, "message": f"タグの検索に失敗しました: {str(e)}"}
-        
 
     def tag_delete(self, tag_id):
         """
         M3 タグ削除要求
-
         Args:
             tag_id (str): タグID
-
         Returns:
-            dict: 処理結果 (`result: bool`, `message: str`)
+            dict: 処理結果 (result: bool, message: str)
         """
         if not tag_id:
             return {"result": False, "message": "タグIDは必須です。"}
 
         try:
-            # tag_idが一致するものを削除
             tag_to_delete = self.db.session.query(Tag).filter_by(id=tag_id).first()
-
             if not tag_to_delete:
                 return {"result": False, "message": f"タグID '{tag_id}' に一致するタグが見つかりません。"}
 
@@ -100,11 +90,9 @@ class CalendarManager:
             self.db.session.rollback()
             return {"result": False, "message": f"タグの削除に失敗しました: {str(e)}"}
 
-        
     def tag_data_save(self, tag_id, tag_name, tag_color, submitter_id, community_id, date):
         """
         M4 タグ投稿データ保存要求
-
         Args:
             tag_id (str): タグID
             tag_name (str): 表示名
@@ -112,9 +100,8 @@ class CalendarManager:
             submitter_id (str): タグ登録者のID
             community_id (str): コミュニティID
             date (str): 日付
-
         Returns:
-            dict: 処理結果 (`result: bool`, `message: str`)
+            dict: 処理結果 (result: bool, message: str)
         """
         if not tag_id:
             return {"result": False, "message": "tag_id が未指定です"}
@@ -134,10 +121,21 @@ class CalendarManager:
             return {"result": True, "message": "指定された日付、登録者のタグは既に登録されています"}
 
         try:
-            new_tag = Tag(id=tag_id, name=tag_name, color=tag_color, submitter_id=submitter_id, community_id=community_id, date=date, notified=False)
+            new_tag = Tag(
+                id=tag_id,
+                name=tag_name,
+                color=tag_color,
+                submitter_id=submitter_id,
+                community_id=community_id,
+                date=date
+            )
             self.db.session.add(new_tag)
             self.db.session.commit()
-            return {"result": True, "message": f"タグ '{tag_name}' (ID: {tag_id}) が追加されました。", "tag": {"id": new_tag.id, "name": new_tag.name}}
+            return {
+                "result": True,
+                "message": f"タグ '{tag_name}' (ID: {tag_id}) が追加されました。",
+                "tag": {"id": new_tag.id, "name": new_tag.name}
+            }
         except Exception as e:
             self.db.session.rollback()
             return {"result": False, "message": f"タグの追加に失敗しました: {str(e)}"}

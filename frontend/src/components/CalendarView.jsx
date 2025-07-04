@@ -1,7 +1,5 @@
 // M11 カレンダー画面コンポーネント 担当: 角田一颯
 
-import React from 'react';
-
 const CalendarView = ({
   events = [],
   onDateClick,
@@ -31,7 +29,7 @@ const CalendarView = ({
     cells.push(
       <div
         key={i}
-        className={`h-24 p-1 relative text-sm font-medium
+        className={`h-28 p-1 relative text-sm font-medium
           ${isSunday || isSaturday ? 'bg-blue-50' : 'bg-white'}
           ${inCurrentMonth ? 'text-gray-800' : 'text-gray-400'}
           ${isToday ? 'bg-yellow-100' : ''}
@@ -48,7 +46,11 @@ const CalendarView = ({
             .map((e) => (
               <div
                 key={e.id}
-                className="absolute left-1 top-6 bg-blue-200 text-blue-800 text-xs rounded-full px-3 py-0.5 shadow-md text-center truncate"
+                className="mb-1 px-2 py-0.5 text-xs rounded-full shadow-sm text-white truncate"
+                style={{
+                  backgroundColor: e.color,
+                  textShadow: "0 0 2px rgba(0,0,0,0.7)",
+                }}
               >
                 {e.tag}
               </div>
@@ -58,7 +60,8 @@ const CalendarView = ({
   }
 
   return (
-    <div className="max-w-5xl mx-auto p-0 font-sans shadow-md rounded-xl bg-white overflow-hidden">
+<div className="max-w-7xl mx-auto p-0 font-sans shadow-md rounded-xl bg-white overflow-hidden">
+
       {/* ヘッダー */}
       <div className="bg-blue-300 text-white py-4 relative">
         <div className="relative text-center">
