@@ -1,13 +1,11 @@
-import React, { useState, useEffect, useRef } from 'react'; // useRef を追加
+import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import Cookies from 'js-cookie';
 
 /**
  * M23 タグチャット画面
- * 特定のタグに関連するチャットメッセージを表示し、ユーザーが新しいメッセージを送信できるようにする。
- *
- * 作成者: (TBD)
+ * 10秒ごとにチャット履歴を自動更新し、読み込み中インジケータをヘッダーに移動
  */
 const CommunityTagChatPage = () => {
   const { communityId, tagId } = useParams();
@@ -16,117 +14,112 @@ const CommunityTagChatPage = () => {
   const navigate = useNavigate();
 
   const [chatHistory, setChatHistory] = useState([]);
-  const [chatMessage, setChatMessage] = useState("");
+  const [chatMessage, setChatMessage] = useState('');
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
-  const [postStatus, setPostStatus] = useState("");
+  const [error, setError] = useState('');
+  const [postStatus, setPostStatus] = useState('');
 
-  const userId = Cookies.get('userId'); // 現在のユーザーIDを取得
+  const userId = Cookies.get('userId');
+  const chatHistoryRef = useRef(null);
 
-  const chatHistoryRef = useRef(null); // チャット履歴のスクロール用Ref
-
-  // リアルタイム性が必要な場合は、WebSocketなどを検討
+  // チャット履歴取得
   const fetchChatHistory = async () => {
+    setLoading(true);
     try {
-      setError(""); // エラーをクリア
-      const res = await axios.get(`${process.env.REACT_APP_API_SERVER_URL}/api/community/${communityId}/tag/${tagId}/chat/history?date=${date}`);
-      // バックエンドが chat_history を配列で返すと仮定
+      setError('');
+      const res = await axios.get(
+        `${process.env.REACT_APP_API_SERVER_URL}/api/community/${communityId}/tag/${tagId}/chat/history?date=${date}`
+      );
       setChatHistory(res.data.chat_history || []);
     } catch (err) {
-      console.error("チャット履歴の取得に失敗しました: ", err);
-      setError("チャット履歴の取得に失敗しました。サーバーとの接続を確認してください。");
+      console.error('チャット履歴の取得に失敗しました: ', err);
+      setError('チャット履歴の取得に失敗しました。サーバーとの接続を確認してください。');
     } finally {
       setLoading(false);
     }
   };
 
+  // 初回とパラメーター変更時に履歴取得
   useEffect(() => {
     fetchChatHistory();
+  }, [communityId, tagId, date]);
 
-    // 読み込み後、チャット履歴を一番下までスクロール
-    if (chatHistoryRef.current) {
-      chatHistoryRef.current.scrollTop = chatHistoryRef.current.scrollHeight;
-    }
-  }, [communityId, tagId, date]); // 依存配列にcommunityId, tagId, dateを含める
+  // 10秒ごとに自動更新
+  useEffect(() => {
+    const interval = setInterval(fetchChatHistory, 10000);
+    return () => clearInterval(interval);
+  }, [communityId, tagId, date]);
 
-  // 新しいメッセージが追加されたら自動でスクロール
+  // 履歴更新時に自動スクロール
   useEffect(() => {
     if (chatHistoryRef.current) {
       chatHistoryRef.current.scrollTop = chatHistoryRef.current.scrollHeight;
     }
   }, [chatHistory]);
 
-
+  // メッセージ送信
   const handleSendMessage = async () => {
-    // メッセージが空でないか、半角英数字200文字以内かチェック
-    if (!chatMessage.trim()) { // 空白のみのメッセージも拒否
-      setError("メッセージが未入力です。");
-      setPostStatus("メッセージの送信に失敗しました。");
+    if (!chatMessage.trim()) {
+      setError('メッセージが未入力です。');
       return;
     }
     if (chatMessage.length > 200) {
-      setError("メッセージは半角英数字200文字以内で入力してください。");
-      setPostStatus("メッセージの送信に失敗しました。");
+      setError('メッセージは半角英数字200文字以内で入力してください。');
       return;
     }
-
     try {
-      setError(""); // エラーをクリア
-      setPostStatus("送信中..."); // 送信中ステータス
-      const res = await axios.post(`${process.env.REACT_APP_API_SERVER_URL}/api/community/${communityId}/tag/${tagId}/chat/post`, {
-        date,
-        message: chatMessage,
-        sender_id: userId
-      });
-
-      // バックエンドのレスポンス形式に依存
-      // `CommunityManagement().post_chat` が新しいメッセージオブジェクトを返すことを想定
-      if (res.data && res.data.new_message) {
-        setChatHistory((prevHistory) => [...prevHistory, res.data.new_message]);
-        setChatMessage(""); // 入力欄をクリア
-        setPostStatus("送信成功！");
-        // 数秒後にステータス表示を消す
-        setTimeout(() => setPostStatus(""), 3000);
+      setError('');
+      setPostStatus('送信中...');
+      const userInfoRes = await axios.get(
+        `${process.env.REACT_APP_API_SERVER_URL}/api/user/get/${userId}`
+      );
+      const userName = userInfoRes.data.user_data.name;
+      const res = await axios.post(
+        `${process.env.REACT_APP_API_SERVER_URL}/api/community/${communityId}/tag/${tagId}/chat/post`,
+        { date, message: chatMessage, sender_id: userId, sender_name: userName }
+      );
+      if (res.data?.new_message) {
+        setChatHistory(prev => [...prev, res.data.new_message]);
+        setChatMessage('');
+        setPostStatus('送信成功！');
+        setTimeout(() => setPostStatus(''), 3000);
       } else {
-        // バックエンドが新しいメッセージを返さない場合のフォールバック
-        // 再度履歴をフェッチするか、エラーとする
-        console.warn("サーバーが新しいメッセージデータを返しませんでした。履歴を再取得します。");
-        fetchChatHistory(); // 履歴を再取得
-        setChatMessage(""); // 入力欄をクリア
-        setPostStatus("送信成功（履歴更新）");
-        setTimeout(() => setPostStatus(""), 3000);
+        await fetchChatHistory();
+        setChatMessage('');
+        setPostStatus('送信成功（履歴更新）');
+        setTimeout(() => setPostStatus(''), 3000);
       }
-
     } catch (err) {
-      console.error("メッセージの送信に失敗しました: ", err);
-      // エラーメッセージをユーザーフレンドリーにする
-      let errorMessage = "メッセージの送信に失敗しました。";
+      console.error('メッセージの送信に失敗しました: ', err);
+      let msg = 'メッセージの送信に失敗しました。';
       if (err.response) {
-        if (err.response.status === 400) {
-          errorMessage = err.response.data.error || "無効なメッセージです。";
-        } else if (err.response.status === 401 || err.response.status === 403) {
-          errorMessage = "認証エラーです。ログインし直してください。";
-        } else {
-          errorMessage = "サーバーエラーが発生しました。";
-        }
+        if (err.response.status === 400) msg = err.response.data.error || msg;
+        else if ([401, 403].includes(err.response.status)) msg = '認証エラーです。ログインし直してください。';
       }
-      setError(errorMessage);
-      setPostStatus("メッセージの送信に失敗しました。");
+      setError(msg);
+      setPostStatus('メッセージの送信に失敗しました。');
     }
   };
 
   const handleCloseClick = () => {
-    // 日付ごとのタグ一覧画面 (W15/M22) に戻る
     navigate(`/community/${communityId}/calendar/tags/${date}`);
   };
 
-  if (loading) return <div className="p-4">読み込み中...</div>;
-
   return (
     <div className="max-w-md mx-auto mt-16 p-6 bg-white shadow-lg rounded-lg">
+      {/* ヘッダー */}
       <div className="flex justify-between items-center mb-4">
-        <h2 className="text-2xl font-bold">タグチャット ({date})</h2>
-        <button onClick={handleCloseClick} className="text-gray-500 hover:text-gray-700 text-xl font-bold">
+        <div className="flex items-center">
+          <h2 className="text-2xl font-bold">タグチャット ({date})</h2>
+          {loading && (
+            <span className="ml-2 text-sm text-gray-500">読み込み中...</span>
+          )}
+        </div>
+        <button
+          onClick={handleCloseClick}
+          className="text-gray-500 hover:text-gray-700 text-xl font-bold"
+          title="閉じる"
+        >
           X
         </button>
       </div>
@@ -134,14 +127,24 @@ const CommunityTagChatPage = () => {
       {error && <p className="text-center text-red-500 mb-4">{error}</p>}
       {postStatus && <p className="text-center text-blue-500 mb-4">{postStatus}</p>}
 
-      <div ref={chatHistoryRef} className="chat-history h-64 overflow-y-auto border p-4 rounded mb-4">
+      {/* チャット履歴 */}
+      <div
+        ref={chatHistoryRef}
+        className="chat-history h-64 overflow-y-auto border p-4 rounded mb-4"
+      >
         {chatHistory.length > 0 ? (
-          chatHistory.map((chat, index) => (
-            <div key={index} className={`mb-2 ${chat.sender_id === userId ? 'text-right' : 'text-left'}`}>
-              {/* sender_name がない場合は、sender_id を表示するなど工夫が必要 */}
-              <span className="font-semibold">{chat.sender_name || `User ID: ${chat.sender_id}`}: </span>
-              <span>{chat.message_content}</span>
-              <div className="text-xs text-gray-500">{new Date(chat.timestamp).toLocaleString()}</div>
+          chatHistory.map((chat, idx) => (
+            <div
+              key={idx}
+              className={`mb-2 ${chat.sender_id === userId ? 'text-right' : 'text-left'}`}
+            >
+              <span className="font-semibold">
+                {chat.sender_name || `User ID: ${chat.sender_id}`}: 
+              </span>
+              <span>{chat.message_content || chat.message}</span>
+              <div className="text-xs text-gray-500">
+                {new Date(chat.timestamp).toLocaleString()}
+              </div>
             </div>
           ))
         ) : (
@@ -149,17 +152,25 @@ const CommunityTagChatPage = () => {
         )}
       </div>
 
+      {/* 入力エリア */}
       <div className="flex">
+        <button
+          onClick={fetchChatHistory}
+          className="px-4 py-2 bg-gray-200 text-gray-700 border border-r-0 rounded-l-md hover:bg-gray-300"
+          title="再読み込み"
+        >
+          🔄
+        </button>
         <input
           type="text"
           value={chatMessage}
-          onChange={(e) => setChatMessage(e.target.value)}
+          onChange={e => setChatMessage(e.target.value)}
           placeholder="メッセージを入力..."
-          className="flex-grow border rounded-l-md p-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+          className="flex-grow border-t border-b border-gray-300 p-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
         />
         <button
           onClick={handleSendMessage}
-          className="px-4 py-2 bg-blue-500 text-white rounded-r-md hover:bg-blue-600"
+          className="px-4 py-2 bg-blue-500 text-white border border-l-0 rounded-r-md hover:bg-blue-600"
         >
           送信
         </button>

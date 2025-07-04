@@ -251,42 +251,45 @@ class CommunityService:
         date = data.get("date", "").strip()
         message = data.get("message", "").strip()
         sender_id = data.get("sender_id", "").strip()
-        if not all([community_id, tag_id, date, message, sender_id]):
+        sender_name = data.get("sender_name", "").strip()
+        
+        if not all([community_id, tag_id, date, message, sender_id,sender_name]):
             return jsonify({"post_status": False, "error": "必要な項目が不足しています。"}), 400
         if len(message) > 200:
             return jsonify({"post_status": False, "error": "半角英数字200文字以内で入力してください。"}), 400
+        
         db = get_db()
         timestamp = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         new_id = uuid.uuid4().hex
+        
         try:
             db.execute(
-                "INSERT INTO chat_messages (id, community_id, tag_id, date, sender_id, message_content, timestamp) VALUES (?, ?, ?, ?, ?, ?, ?)",
-                (new_id, community_id, tag_id, date, sender_id, message, timestamp)
+                "INSERT INTO chat_messages (id, community_id, tag_id, date, sender_id, sender_name, message_content, timestamp) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+                (new_id, community_id, tag_id, date, sender_id, sender_name, message, timestamp)
             )
             db.commit()
         except Exception as e:
             logger.warning(f"❌ チャット保存失敗: {e}")
             return jsonify({"post_status": False, "error": "メッセージ保存中にエラーが発生しました。"}), 500
-        new_message = {"sender_id": sender_id, "sender_name": sender_id, "message_content": message, "timestamp": timestamp}
+        new_message = {"sender_id": sender_id, "sender_name": sender_name, "message_content": message, "timestamp": timestamp}
         return jsonify({"post_status": True, "new_message": new_message}), 201
 
-    def get_chat_history(self, community_id, tag_id):
+    def get_chat_history(self, community_id, tag_id, date):
         """
         M9 指定されたコミュニティ・タグ・日付に紐づくチャット履歴を取得する。
         """
-        date = request.args.get("date", "").strip()
         if not all([community_id, tag_id, date]):
             return jsonify({"error": "不正な入力です"}), 400
         db = get_db()
         try:
             rows = db.execute(
-                "SELECT sender_id, message_content, timestamp FROM chat_messages WHERE community_id = ? AND tag_id = ? AND date = ? ORDER BY timestamp ASC",
+                "SELECT sender_id, sender_name, message_content, timestamp FROM chat_messages WHERE community_id = ? AND tag_id = ? AND date = ? ORDER BY timestamp ASC",
                 (community_id, tag_id, date)
             ).fetchall()
         except Exception as e:
             logger.warning(f"❌ チャット履歴取得失敗: {e}")
             return jsonify({"error": "チャット履歴の取得に失敗しました。"}), 500
-        chat_history = [{"sender_id": r["sender_id"], "sender_name": r["sender_id"], "message_content": r["message_content"], "timestamp": r["timestamp"]} for r in rows]
+        chat_history = [{"sender_id": r["sender_id"], "sender_name": r["sender_name"], "message_content": r["message_content"], "timestamp": r["timestamp"]} for r in rows]
         return jsonify({"chat_history": chat_history}), 200
 
     def get_community_members(self):

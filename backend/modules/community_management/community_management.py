@@ -63,6 +63,7 @@ def init_db():
             tag_id TEXT NOT NULL,
             date TEXT NOT NULL,
             sender_id TEXT NOT NULL,
+            sender_name TEXT NOT NULL,
             message_content TEXT NOT NULL,
             timestamp TEXT NOT NULL,
             FOREIGN KEY (community_id) REFERENCES communities(id),
