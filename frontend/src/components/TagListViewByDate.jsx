@@ -30,27 +30,26 @@ const TagListViewByDate = ({ date, tagList, memberList, onTagClick, onEditClick,
 
       <h3 className="text-xl font-semibold mb-3">タグ一覧</h3>
       {tagList.length > 0 ? (
-  tagList.map((tag, index) => (
-    <div key={index} className="flex justify-between items-center bg-gray-100 p-3 rounded-md mb-2">
-      {/* タグの名前と色を表示する部分 */}
-      <div
-        className="text-lg px-3 py-1 rounded font-semibold text-white" // text-white を追加
-        style={{
-          backgroundColor: `#${tag.color}`, // tag.color を背景色に適用
-          textShadow: "0 0 2px rgba(0,0,0,0.7)" // テキストの視認性を高めるためのシャドウ
-        }}
-      >
-        {tag.name}
-      </div>
-      <button onClick={() => onTagClick(tag.id)} className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600">
-        チャットへ
-      </button>
-    </div>
-  ))
-) : (
+        tagList.map((tag, index) => (
+          <div key={index} className="flex justify-between items-center bg-gray-100 p-3 rounded-md mb-2">
+            {/* タグの名前と色を表示する部分 */}
+            <div
+              className="flex-1 text-lg px-3 py-1 rounded font-semibold text-white truncate"
+              style={{
+                backgroundColor: `#${tag.color}`, // tag.color を背景色に適用
+                textShadow: "0 0 2px rgba(0,0,0,0.7)" // テキストの視認性を高めるためのシャドウ
+              }}
+            >
+              {tag.name}
+            </div>
+            <button onClick={() => onTagClick(tag.id)} className="ml-4 px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600">
+              チャットへ
+            </button>
+          </div>
+        ))
+      ) : (
         <p className="text-gray-600 mb-4">この日付にはタグがありません。</p>
       )}
-
 
       <div className="flex justify-center space-x-4 mt-6">
         <button onClick={onEditClick} className="px-6 py-2 bg-green-500 text-white rounded hover:bg-green-600">
