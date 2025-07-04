@@ -13,7 +13,7 @@ import { useState } from "react";
  * - onClickClose: () => void - ×ボタンを押したときに呼ばれる関数
  */
 const TagPost = ({ tagList = [], date ,onSubmit, onClickClose }) => {
-  const [selectedId, setSelectedId] = useState("");
+  const [selectedTag, setSelectedTag] = useState({});
 
   return (
     <div className="max-w-md mx-auto mt-10 p-6 bg-gradient-to-b from-white to-gray-100 rounded shadow">
@@ -34,15 +34,16 @@ const TagPost = ({ tagList = [], date ,onSubmit, onClickClose }) => {
               type="radio"
               name="templateTag"
               value={tag.id}
-              checked={selectedId === tag.id}
-              onChange={() => setSelectedId(tag.id)}
-              className="w-5 h-5 text-blue-500"
+              checked={selectedTag.id === tag.id}
+              onChange={() => setSelectedTag(tag)}
+              className="w-5 h-5 font-semibold text-white"
             />
             <div
               className="flex-1 px-3 py-2 rounded border text-gray-800"
-              style={{ backgroundColor: `#${tag.color}` }}
+              style={{ backgroundColor: `#${tag.color_code}`,
+                       textShadow: "0 0 1px white" }}
             >
-              {tag.name}
+              {tag.tag}
             </div>
           </label>
         ))}
@@ -51,7 +52,7 @@ const TagPost = ({ tagList = [], date ,onSubmit, onClickClose }) => {
       {/* 完了ボタン */}
       <div className="text-center">
         <button
-          onClick={() => onSubmit(selectedId)}
+          onClick={() => onSubmit(selectedTag)}
           className="bg-white border px-6 py-2 rounded shadow hover:bg-gray-100"
         >
           完了

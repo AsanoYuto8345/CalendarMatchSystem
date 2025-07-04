@@ -130,7 +130,7 @@ class CalendarManager:
 
         # 重複チェック (nameだけでなくidもチェックする方が安全)
         if self.db.session.query(Tag).filter((Tag.date == date) & (Tag.submitter_id == submitter_id) & (Tag.name == tag_name)).first():
-            return {"result": False, "message": "指定された日付、登録者のタグは"}
+            return {"result": True, "message": "指定された日付、登録者のタグは既に登録されています"}
 
         try:
             new_tag = Tag(id=tag_id, name=tag_name, color=tag_color, submitter_id=submitter_id, community_id=community_id, date=date, notified=False)

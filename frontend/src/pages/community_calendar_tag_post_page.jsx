@@ -26,7 +26,7 @@ const TagPostPage = () => {
   // タグ一覧取得
   useEffect(() => {
     axios
-      .get(`${process.env.REACT_APP_API_SERVER_URL}/api/community/${communityId}/calendar/template_tags`)
+      .get(`${process.env.REACT_APP_API_SERVER_URL}/api/community/template_tags?community_id=${communityId}`)
       .then((res) => {
         setTagList(res.data.tags || []);
       })
@@ -40,16 +40,22 @@ const TagPostPage = () => {
   }, [communityId]);
 
   // タグ追加API呼び出し
-  const handleSubmit = (selectedId) => {
-    if (!selectedId) return;
+  const handleSubmit = (selectedTag) => {
+    if (!selectedTag) return;
 
     axios
-      .post(`${process.env.REACT_APP_API_SERVER_URL}/api/calendar/${date}/tags`, {
-        tag_id: selectedId,
-        user_id: userId
+      .post(`${process.env.REACT_APP_API_SERVER_URL}/api/${communityId}/calendar/tag/add`, {
+        tag_name: selectedTag.tag,
+        tag_color: selectedTag.color_code,
+        submitter_id: userId,
+        date: date
       })
-      .then(() => {
-        navigate(`/community/${communityId}/calendar/${date}/tags/post/complate`);
+      .then((res) => {
+        if(res.data.message === "指定された日付、登録者のタグは既に登録されています"){
+          alert("指定されたタグは既に追加済みです");
+        }else{
+          navigate(`/community/${communityId}/calendar/${date}/tags/post/complate`);
+        }
       })
       .catch((err) => {
         console.error(err);
@@ -58,7 +64,7 @@ const TagPostPage = () => {
   };
 
   const handleClose = () => {
-    navigate(`/community/${communityId}/calendar/${date}/tags/view`);
+    navigate(`/community/${communityId}/calendar/tags/${date}`);
   }
 
   if (loading) return <div className="p-4">読み込み中...</div>;

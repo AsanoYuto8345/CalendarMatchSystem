@@ -9,11 +9,11 @@ import TagPostComplete from "../components/TagPostComplateMessage";
  */
 
 const TagPostCompleteMesaagePage = () => {
-  const { communityId } = useParams();
+  const { communityId, date } = useParams();
   const navigate = useNavigate();
 
   const handleClose = () => {
-    navigate(`/community/${communityId}/calendar/:date/tags/view`);
+    navigate(`/community/${communityId}/calendar/${date}/tags/view`);
   }
 
   return (
