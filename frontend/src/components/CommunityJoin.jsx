@@ -4,7 +4,7 @@ import axios from 'axios';
 import Cookies from 'js-cookie'; // ← 追加
 
 function CommunityJoin() {
-  const [communityId, setCommunityId] = useState('');
+  const [communityName, setCommunityName] = useState('');
   const [showSuccessModal, setShowSuccessModal] = useState(false);
 
   const handleJoin = async (e) => {
@@ -16,8 +16,8 @@ function CommunityJoin() {
     }
 
     try {
-      await axios.post('http://localhost:5001/api/community/join', {
-        community_name: communityId,
+      await axios.post(`${process.env.REACT_APP_API_SERVER_URL}/api/community/join`, {
+        community_name: communityName,
         user_id: userId
       });
       setShowSuccessModal(true);
@@ -60,8 +60,8 @@ function CommunityJoin() {
         <input
           type="text"
           placeholder="コミュニティ名"
-          value={communityId}
-          onChange={(e) => setCommunityId(e.target.value)}
+          value={communityName}
+          onChange={(e) => setCommunityName(e.target.value)}
           required
           className="w-full p-2 mb-5 border border-gray-300 rounded"
         />
