@@ -301,7 +301,7 @@ class CommunityService:
 
     def get_community_info_by_id(self):
         """
-        M10: コミュニティIDから情報取得
+        M10: コミュニティIDから情報取得（C9へ委譲）
         """
         community_id = request.args.get("community_id", "").strip()
         from modules.community_management.community_management import CommunityManagement
@@ -310,7 +310,7 @@ class CommunityService:
 
     def get_community_info_by_tag_id(self):
         """
-        M11: テンプレートタグIDからコミュニティ情報取得
+        M11: テンプレートタグIDからコミュニティ情報取得（C9へ委譲）
         """
         tag_id = request.args.get("tag_id", "").strip()
         from modules.community_management.community_management import CommunityManagement
@@ -322,5 +322,6 @@ class CommunityService:
         M12: テンプレートタグIDからテンプレートタグ情報
         """
         tag_id = request.args.get("tag_id", "").strip()
+        from modules.community_management.community_management import CommunityManagement
         cm = CommunityManagement()
         return cm.get_template_tag_info_by_id(tag_id)
