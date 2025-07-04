@@ -1,3 +1,5 @@
+// community_member_list.jsx
+
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import axios from 'axios';
@@ -18,14 +20,30 @@ const CommunityMemberListPage = () => {
   useEffect(() => {
     const fetchMemberList = async () => {
       try {
-        const res = await axios.get(`${process.env.REACT_APP_API_SERVER_URL}/api/community/${communityId}/members`); // 
-        setMemberList(res.data.members); // 
+        // Step 1: コミュニティメンバーのuser_idリストを取得
+        const res = await axios.get(`${process.env.REACT_APP_API_SERVER_URL}/api/community/members?community_id=${communityId}`);
+        const userIds = res.data.members; // user_idのリストを想定
+
+        // Step 2: 各user_idに対応するユーザー詳細情報を取得
+        const detailedMembers = await Promise.all(
+          userIds.map(async (userId) => {
+            try {
+              // C3 ユーザ情報処理部のM4 ユーザデータ取得処理のエンドポイントを呼び出し 
+              const userRes = await axios.get(`${process.env.REACT_APP_API_SERVER_URL}/api/user/get/${userId}`);
+              return userRes.data.user_data; // user_dataにはuser_id, name, icon_nameなどが含まれる想定
+            } catch (userErr) {
+              console.warn(`ユーザーID ${userId} の情報取得に失敗しました: `, userErr);
+              return { user_id: userId, user_name: `不明なユーザー (${userId})`, user_icon_url: '/icons/default_user.png' }; // 失敗した場合のフォールバック
+            }
+          })
+        );
+        setMemberList(detailedMembers);
       } catch (err) {
         console.error("メンバー情報の取得に失敗しました: ", err);
         if (err.response && err.response.status === 404) {
           setError("コミュニティが見つかりません。");
         } else {
-          setError("メンバー情報の取得に失敗しました。"); // 
+          setError("メンバー情報の取得に失敗しました。");
         }
       } finally {
         setLoading(false);
@@ -36,7 +54,7 @@ const CommunityMemberListPage = () => {
   }, [communityId, navigate]);
 
   const handleCloseClick = () => {
-    // W2 カレンダー画面 (community_calendar_view_page) に戻る 
+    // W2 カレンダー画面 (community_calendar_view_page) に戻る
     navigate(`/community/${communityId}/calendar/view`);
   };
 
@@ -56,6 +74,7 @@ const CommunityMemberListPage = () => {
       {memberList.length > 0 ? (
         memberList.map((member, index) => (
           <div key={index} className="flex items-center bg-gray-100 p-3 rounded-md mb-2">
+            {/* user_icon_url と user_name を表示 */}
             <img src={member.user_icon_url} alt={member.user_name} className="w-10 h-10 rounded-full mr-3" />
             <span className="text-lg">{member.user_name}</span>
           </div>
