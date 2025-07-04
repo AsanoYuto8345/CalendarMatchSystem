@@ -15,6 +15,7 @@ class Tag(db.Model):
     submitter_id = db.Column(db.String(100), nullable=False)
     community_id = db.Column(db.String(100), nullable=False)
     date         = db.Column(db.String(100), nullable=False)
+    notified     = db.Column(db.Boolean, nullable=False, default=False)  # ← ここ！
 
     def __repr__(self):
         return f"<Tag(id='{self.id}', name='{self.name}')>"
@@ -29,7 +30,8 @@ class Tag(db.Model):
             "color": self.color,
             "submitter_id": self.submitter_id,
             "community_id": self.community_id,
-            "date": self.date
+            "date": self.date,
+            "notified": self.notified
         }
 
 
@@ -127,7 +129,8 @@ class CalendarManager:
                 color=tag_color,
                 submitter_id=submitter_id,
                 community_id=community_id,
-                date=date
+                date=date,
+                notified=False
             )
             self.db.session.add(new_tag)
             self.db.session.commit()
@@ -181,6 +184,7 @@ class CalendarManager:
         except Exception as e:
             self.db.session.rollback()
             return {"result": False, "message": f"タグマッチングの検索に失敗しました: {str(e)}"}
+        
         
     def find_user_date_community(self, community_id, date, user_id):
         for key, val in [("community_id", community_id), ("date", date), ("user_id", user_id)]:
