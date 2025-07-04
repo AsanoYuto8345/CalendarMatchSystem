@@ -16,7 +16,7 @@ except ImportError:
    user_management_logger = logging.getLogger(__name__)
 
 # DBファイルのパスは環境変数または設定ファイルで管理することを推奨
-DATABASE_NAME = os.getenv('DATABASE_NAME', 'data/calendar.db') # 外部設計書 F1,F2,F3,F4物理的位置参照
+DATABASE_NAME = os.getenv('DATABASE_NAME', 'instance/messages.db') # 外部設計書 F1,F2,F3,F4物理的位置参照
 
 class UserDataManagement:
    """
