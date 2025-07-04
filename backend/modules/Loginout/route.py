@@ -56,6 +56,7 @@ def login_route():
         logger.error("login_route: UserAuth instance not initialized.")
         return jsonify({"error": "サーバー内部エラー"}), 500
 
+    # ここでsignin_userにemailとpasswordを渡しているため、修正は不要です。
     success, sid = user_auth_instance.signin_user(email, password)
 
     if success:
