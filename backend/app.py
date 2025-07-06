@@ -54,7 +54,7 @@ from modules.user_data_process.route import user_data_bp
 from modules.user_data_management.route import user_bp
 from modules.calendar_process.route import calendar_bp
 from modules.calendar_manager.route import calendar_manager_bp
-from modules.Loginout.route import auth_bp
+from modules.Loginout.route import auth_bp ,init_app
 from modules.matching.route import matching_bp
 # Blueprint の登録
 
@@ -67,6 +67,7 @@ app.register_blueprint(user_data_bp) # C3 ユーザ情報処理部のBlueprint�
 app.register_blueprint(user_bp)      # C8 ユーザ情報管理部のBlueprintを登録
 app.register_blueprint(matching_bp)
 
+init_app(app)
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5001, debug=True)
