@@ -50,6 +50,64 @@ def search_user_data():
        user_logger.error(f"Error searching user data for ID {user_id}: {e}")
        return jsonify({"message": "Internal server error"}), 500
 
+
+@user_bp.route('/sid/create', methods=['POST'])
+def create_sid():
+    """
+    M3 SID作成処理に対応
+    ユーザIDを受け取り、F2 ユーザ認証情報にSIDを作成する。
+    """
+    data = request.json
+    user_id = data.get('user_id')  # ここを変更
+
+    if not user_id:
+        user_logger.warning("user_id is missing for SID creation request.")
+        return jsonify({"message": "user_id is required"}), 400
+
+    try:
+        user_manager = UserDataManagement()
+        sid = user_manager.make_sid(user_id)  # user_id を渡す
+
+        if sid:
+            user_logger.info(f"SID created for user_id {user_id}.")
+            return jsonify({"sid": sid}), 200
+        else:
+            user_logger.warning(f"Failed to create SID for user_id {user_id}.")
+            return jsonify({"message": "Failed to create SID"}), 500
+    except Exception as e:
+        user_logger.error(f"Error creating SID for user_id {user_id}: {e}")
+        return jsonify({"message": "Internal server error"}), 500
+
+
+@user_bp.route('/sid/delete', methods=['DELETE'])
+def delete_sid():
+   """
+   M4 SID破棄処理に対応
+   入力されたSIDをF2 ユーザ認証情報から破棄する。
+   """
+   data = request.json
+   sid = data.get('sid')
+
+   if not sid:
+       user_logger.warning("SID is missing for deletion request.")
+       return jsonify({"message": "SID is required"}), 400
+
+   try:
+       user_manager = UserDataManagement()
+       # SID破棄処理の呼び出し
+       result = user_manager.delete_sid(sid)
+
+       if result:
+           user_logger.info(f"SID {sid} deleted successfully.")
+           return jsonify({"message": "SID deleted successfully"}), 200
+       else:
+           user_logger.warning(f"SID {sid} not found or deletion failed.")
+           return jsonify({"message": "SID not found or deletion failed"}), 404
+   except Exception as e:
+       user_logger.error(f"Error deleting SID {sid}: {e}")
+       return jsonify({"message": "Internal server error"}), 500
+
+
 @user_bp.route('/users/register', methods=['POST'])
 def register_user_data():
    """
@@ -116,58 +174,26 @@ def update_user_data():
        user_logger.error(f"Error updating user {user_id}: {e}")
        return jsonify({"message": "Internal server error"}), 500
 
-@user_bp.route('/sid/create', methods=['POST'])
-def create_sid():
-   """
-   M3 SID作成処理に対応
-   ユーザを認証するためのSIDをF2 ユーザ認証情報に作成する。
-   """
-   data = request.json
-   email = data.get('mail')
+@user_bp.route('/users/login', methods=['GET'])
+def find_login_user_route():
+    """
+    M7 ログイン用ユーザ検索エンドポイント。
+    クエリパラメータ email を受け取り、該当ユーザを返す。
+    """
+    email = request.args.get('email')
+    if not email or not isinstance(email, str):
+        user_logger.warning("find_login_user_route: email is missing or invalid")
+        return jsonify({"error": "email パラメータが必要です"}), 400  # E1
 
-   if not email:
-       user_logger.warning("email is missing for SID creation request.")
-       return jsonify({"message": "email is required"}), 400
-
-   try:
-       user_manager = UserDataManagement()
-       # SID作成処理の呼び出し
-       sid = user_manager.make_sid(email)
-
-       if sid:
-           user_logger.info(f"SID created for user {email}.")
-           return jsonify({"sid": sid}), 200
-       else:
-           user_logger.warning(f"Failed to create SID for user {email}.")
-           return jsonify({"message": "Failed to create SID"}), 500
-   except Exception as e:
-       user_logger.error(f"Error creating SID for user {email}: {e}")
-       return jsonify({"message": "Internal server error"}), 500
-
-@user_bp.route('/sid/delete', methods=['DELETE'])
-def delete_sid():
-   """
-   M4 SID破棄処理に対応
-   入力されたSIDをF2 ユーザ認証情報から破棄する。
-   """
-   data = request.json
-   sid = data.get('sid')
-
-   if not sid:
-       user_logger.warning("SID is missing for deletion request.")
-       return jsonify({"message": "SID is required"}), 400
-
-   try:
-       user_manager = UserDataManagement()
-       # SID破棄処理の呼び出し
-       result = user_manager.delete_sid(sid)
-
-       if result:
-           user_logger.info(f"SID {sid} deleted successfully.")
-           return jsonify({"message": "SID deleted successfully"}), 200
-       else:
-           user_logger.warning(f"SID {sid} not found or deletion failed.")
-           return jsonify({"message": "SID not found or deletion failed"}), 404
-   except Exception as e:
-       user_logger.error(f"Error deleting SID {sid}: {e}")
-       return jsonify({"message": "Internal server error"}), 500
+    try:
+        user_manager = UserDataManagement()
+        found, user = user_manager.find_login_user(email)
+        if found:
+            user_logger.info(f"find_login_user_route: User found for email {email}")
+            return jsonify({"user_data": user}), 200
+        else:
+            user_logger.warning(f"find_login_user_route: User not found for email {email}")
+            return jsonify({"message": "User not found"}), 404  # E2
+    except Exception as e:
+        user_logger.error(f"find_login_user_route: Error while searching user {email}: {e}")
+        return jsonify({"error": "Internal server error"}), 500

@@ -4,7 +4,7 @@
  * 作成者: 石田めぐみ
  */
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
 import Cookies from 'js-cookie';
@@ -12,36 +12,41 @@ import Cookies from 'js-cookie';
 import LoginUI from '../components/LoginUI';
 
 const AuthLoginPage = () => {
-  const [email, setEmail] = useState('');
+  const [email, setEmail]       = useState('');
   const [password, setPassword] = useState('');
   const [errorMsg, setErrorMsg] = useState('');
-  const navigate = useNavigate();
+  const navigate                = useNavigate();
 
-  const handleEmailChange = (e) => setEmail(e.target.value);
-  const handlePasswordChange = (e) => setPassword(e.target.value);
+  // 既にsidとuserIdがあれば、勝手にホームへリダイレクト
+  useEffect(() => {
+    const sid    = Cookies.get('sid');
+    const userId = Cookies.get('userId');
+    if (sid && userId) {
+      navigate('/');
+    }
+  }, [navigate]);
+
+  const handleEmailChange    = e => setEmail(e.target.value);
+  const handlePasswordChange = e => setPassword(e.target.value);
 
   const handleLoginClick = () => {
     setErrorMsg('');
 
     axios.post(`${process.env.REACT_APP_API_SERVER_URL}/api/auth/login`, {
       email,
-      pw: password // バックエンド側が pw を期待しているならここを pw にする
+      pw: password
     })
-      .then((res) => {
-        // サーバーからのレスポンスに sid を期待
-        const sid = res.data.sid;
-        Cookies.set('sid', sid);
-
-        // 必要なら userId なども保存（将来的に）
-        // Cookies.set('userId', res.data.user_id);
-
-        // トップページへ遷移
-        navigate('/calendar');
-      })
-      .catch((err) => {
-        console.error(err);
-        setErrorMsg('ログインに失敗しました。メールアドレスまたはパスワードをご確認ください。');
-      });
+    .then(res => {
+      const sid    = res.data.sid;
+      const userId = res.data.user_id;
+      Cookies.set('sid', sid);
+      Cookies.set('userId', userId);
+      navigate('/');
+    })
+    .catch(err => {
+      console.error(err);
+      setErrorMsg('ログインに失敗しました。メールアドレスまたはパスワードをご確認ください。');
+    });
   };
 
   return (

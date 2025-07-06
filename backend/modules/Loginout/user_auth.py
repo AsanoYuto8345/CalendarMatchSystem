@@ -76,7 +76,7 @@ class UserAuth:
         self.http_client = http_client
 
         # 環境変数からC8のベースURLを取得。設定されていない場合はデフォルト値を使用。
-        self.C8_BASE_URL = os.environ.get("C8_BASE_URL", "http://localhost:8000/api")
+        self.C8_BASE_URL = os.environ.get("C8_BASE_URL", "http://localhost:5001/api")
 
 
     def handle_auth(self, url: str) -> tuple[int, str]:
@@ -137,39 +137,58 @@ class UserAuth:
             logger.error(f"Unexpected error creating SID for user {email}: {e}")
             return None
 
-
-    def signin_user(self, email: str, pw: str) -> tuple[bool, str]:
+    def signin_user(self, email: str, pw: str) -> tuple[bool, str, str]:
         """
         M2 ログイン処理：
-        C8にメールアドレスで直接ユーザー検索APIがないため、暫定的に
-        emailの前半部分をユーザIDとしてC8のユーザー検索APIを呼ぶ例。
-        パスワード検証は現状C8のAPI仕様上不可能なためFalseを返す。
+        - M8 API (/api/users/find) 経由でメールアドレスからユーザ情報を取得
+        - 取得したハッシュ済みパスワードを検証
+        - 成功時に SID を発行・返却
+        Returns:
+            (success: bool, sid: str, user_id: str)
         """
-        user_id_guess = email.split("@")[0]
-
+        # 1) ユーザ情報取得
         try:
-            response = self.http_client.get(f"{self.C8_BASE_URL}/users/search", params={"id": user_id_guess})
-
-            if response.status_code == 404:
-                logger.warning(f"User not found: {user_id_guess}")
-                return False, ""
-
-            response.raise_for_status()
-            user_info = response.json()
-
-        except requests.exceptions.RequestException as e:
-            logger.error(f"Error retrieving user info: {e}")
-            return False, ""
-        except json.JSONDecodeError as e:
-            logger.error(f"Error decoding JSON from C8 user info: {e}")
-            return False, ""
+            url = f"{self.C8_BASE_URL}/users/login"
+            resp = self.http_client.get(url, params={"email": email})
+            if resp.status_code == 404:
+                logger.warning(f"signin_user: User not found via API for email: {email}")
+                return False, "", ""
+            resp.raise_for_status()
+            data = resp.json()
+            user = data.get("user_data", {})
+            user_id = user.get("id", "")
         except Exception as e:
-            logger.error(f"Unexpected error retrieving user info: {e}")
-            return False, ""
+            logger.error(f"signin_user: Error fetching user via API: {e}")
+            return False, "", ""
 
-        # パスワード検証はC8 API仕様上できないため認証失敗として扱う
-        logger.error("Password verification not implemented due to C8 API limitations.")
-        return False, ""
+        # 2) パスワード検証
+        stored_hash = user.get("password", "")
+        if not stored_hash:
+            logger.error(f"signin_user: No password hash returned for {email}")
+            return False, "", ""
+        if not self.password_hasher.verify_password(pw, stored_hash):
+            logger.warning(f"signin_user: Invalid password for user: {email}")
+            return False, "", ""
+
+        # 3) SID 発行
+        try:
+            sid_url = f"{self.C8_BASE_URL}/sid/create"
+            resp = self.http_client.post(
+                sid_url,
+                json={"user_id": user_id}
+            )
+            resp.raise_for_status()
+            sid = resp.json().get("sid", "")
+        except Exception as e:
+            logger.error(f"signin_user: Error creating SID for {email}: {e}")
+            return False, "", ""
+
+        if not sid:
+            logger.error(f"signin_user: Failed to create SID for user: {email}")
+            return False, "", ""
+
+        logger.info(f"signin_user: Login successful for {email}, sid={sid}, user_id={user_id}")
+        return True, sid, user_id
 
 
     def signout_user(self, sid: str) -> bool:

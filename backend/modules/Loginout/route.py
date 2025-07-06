@@ -33,39 +33,40 @@ def init_app(app_instance):
 def login_route():
     """
     M2 ログイン処理のAPIエンドポイント。
-    メールアドレスとパスワードでユーザー認証を行い、成功時にセッションIDを返す。
+    メールアドレスとパスワードでユーザー認証を行い、
+    成功時にセッションIDを返す。
     """
     if not request.is_json:
         logger.warning("login_route: Request must be JSON.")
         return jsonify({"error": "Request must be JSON"}), 400
 
-    data = request.json
+    data = request.get_json()
     email = data.get('email')
-    password = data.get('pw')
+    pw    = data.get('pw')
 
-    # E1: 入力エラーチェック (メールアドレス、パスワードの未指定)
+    # 入力チェック
     if not email or not isinstance(email, str):
         logger.warning("login_route: Email is missing or invalid type.")
         return jsonify({"error": "メールアドレスが未指定または形式不正です"}), 400
-    if not password or not isinstance(password, str):
+    if not pw or not isinstance(pw, str):
         logger.warning("login_route: Password is missing or invalid type.")
         return jsonify({"error": "パスワードが未指定です"}), 400
 
-    # UserAuthインスタンスが存在することを確認
     if user_auth_instance is None:
         logger.error("login_route: UserAuth instance not initialized.")
         return jsonify({"error": "サーバー内部エラー"}), 500
 
-    # ここでsignin_userにemailとpasswordを渡しているため、修正は不要です。
-    success, sid = user_auth_instance.signin_user(email, password)
+    # 認証処理
+    success, sid, user_id = user_auth_instance.signin_user(email, pw)
 
     if success:
-        logger.info(f"login_route: Login successful for email: {email}")
-        return jsonify({"message": "Login successful", "sid": sid}), 200
+        return jsonify({
+            "message": "Login successful",
+            "sid": sid,
+            "user_id": user_id
+        }), 200
     else:
-        # UserAuthのsignin_userは、認証失敗時（ユーザー不在、パスワード不一致など）にFalseを返す
-        logger.warning(f"login_route: Login failed for email: {email}")
-        return jsonify({"error": "メールアドレスまたはパスワードが不正です"}), 401 # 401 Unauthorized
+        return jsonify({"error": "メールアドレスまたはパスワードが不正です"}), 401
 
 
 @auth_bp.route('/logout', methods=['DELETE']) # 設計書とuser_auth.pyの整合性からDELETEに統一

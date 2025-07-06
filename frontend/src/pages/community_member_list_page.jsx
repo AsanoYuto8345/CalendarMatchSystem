@@ -18,6 +18,7 @@ const CommunityMemberListPage = () => {
   const [error, setError] = useState("");
 
   useEffect(() => {
+    console.log(memberList);
     const fetchMemberList = async () => {
       try {
         // Step 1: コミュニティメンバーのuser_idリストを取得
