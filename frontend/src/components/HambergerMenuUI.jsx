@@ -87,7 +87,7 @@ const HambergerMenuUI = ({ selectedCommunityId, setSelectedCommunityId }) => {
                   className="focus:outline-none"
                 >
                   <img
-                    src={comm.iconUrl}
+                    src={comm.iconUrl ? `${process.env.REACT_APP_API_SERVER_URL}/${comm.iconUrl}` : `${process.env.REACT_APP_API_SERVER_URL}/uploads/default_community_icon.png`}
                     alt={comm.name}
                     className="w-8 h-8 rounded-full"
                   />
@@ -104,7 +104,7 @@ const HambergerMenuUI = ({ selectedCommunityId, setSelectedCommunityId }) => {
             <div className="flex flex-col items-center w-full px-2">
               <button onClick={toggleUserMenu} className="focus:outline-none">
                 <img
-                  src={`${process.env.REACT_APP_API_SERVER_URL}/uploads/${userInfo.icon_name}`}
+                  src={ `${process.env.REACT_APP_API_SERVER_URL}/uploads/${userInfo.icon_name}`}
                   alt="User"
                   className="w-8 h-8 rounded-full"
                 />
