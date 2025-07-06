@@ -1,10 +1,11 @@
-import React, { useState } from 'react';
+import React, { useState } from "react";
+import Cookies from "js-cookie";
 
 function CommunityCreate() {
-  const [communityName, setCommunityName] = useState('');
+  const [communityName, setCommunityName] = useState("");
   const [image, setImage] = useState(null);
-  const [message, setMessage] = useState('');
-  const [preview, setPreview] = useState('');
+  const [message, setMessage] = useState("");
+  const [preview, setPreview] = useState("");
   const [loading, setLoading] = useState(false);
   const [showSuccessModal, setShowSuccessModal] = useState(false);
 
@@ -17,47 +18,69 @@ function CommunityCreate() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
-    setMessage('');
+    setMessage("");
 
     if (!communityName.trim()) {
-      setMessage('コミュニティ名を入力してください');
+      setMessage("コミュニティ名を入力してください");
       setLoading(false);
       return;
     }
     if (communityName.length > 16) {
-      setMessage('コミュニティ名は16文字以内で入力してください');
+      setMessage("コミュニティ名は16文字以内で入力してください");
       setLoading(false);
       return;
     }
 
     try {
       const formData = new FormData();
-      formData.append('community_name', communityName);
-      if (image) formData.append('image', image);
+      formData.append("community_name", communityName);
+      if (image) formData.append("image", image);
 
-      const response = await fetch('http://localhost:5001/api/community/create', {
-        method: 'POST',
-        body: formData
-      });
+      const response = await fetch(
+        "http://localhost:5001/api/community/create",
+        {
+          method: "POST",
+          body: formData,
+        }
+      );
 
       const text = await response.text();
       let data;
       try {
         data = JSON.parse(text);
       } catch {
-        setMessage(`サーバーエラー: レスポンスがJSONではありません (${response.status})`);
+        setMessage(
+          `サーバーエラー: レスポンスがJSONではありません (${response.status})`
+        );
         return;
       }
 
       if (response.ok) {
-        setShowSuccessModal(true);
-        const name = data.community_name || communityName;
-        setMessage(`コミュニティ「${name}」を作成しました！`);
-        setCommunityName('');
-        setImage(null);
-        setPreview('');
-        const fileInput = document.getElementById('image-upload');
-        if (fileInput) fileInput.value = '';
+        const userId = Cookies.get("userId");
+        const responseJoin = await fetch(
+          `${process.env.REACT_APP_API_SERVER_URL}/api/community/join`,
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              community_name: communityName,
+              user_id: userId,
+            }),
+          }
+        );
+        console.log(responseJoin);
+        if (responseJoin.ok) {
+          setShowSuccessModal(true);
+          const name = data.community_name || communityName;
+          setMessage(`コミュニティ「${name}」を作成し、参加しました！`);
+          setCommunityName("");
+          setImage(null);
+          setPreview("");
+          const fileInput = document.getElementById("image-upload");
+          if (fileInput) fileInput.value = "";
+        }
       } else {
         setMessage(data.error || `エラーが発生しました (${response.status})`);
       }
@@ -76,7 +99,9 @@ function CommunityCreate() {
             <button
               onClick={() => setShowSuccessModal(false)}
               className="absolute top-2 right-2 text-xl text-gray-500 hover:text-black"
-            >×</button>
+            >
+              ×
+            </button>
             <h3 className="mt-4 text-lg font-semibold">作成完了</h3>
           </div>
         </div>
@@ -99,7 +124,10 @@ function CommunityCreate() {
         </div>
 
         <div className="mb-4">
-          <label htmlFor="image-upload" className="cursor-pointer text-blue-600 underline">
+          <label
+            htmlFor="image-upload"
+            className="cursor-pointer text-blue-600 underline"
+          >
             📷 画像を選ぶ（任意）
           </label>
           <input
@@ -109,24 +137,44 @@ function CommunityCreate() {
             onChange={handleImageChange}
             className="hidden"
           />
-          {image && <div className="mt-2 text-sm text-gray-600">選択された画像: {image.name} ({Math.round(image.size / 1024)}KB)</div>}
+          {image && (
+            <div className="mt-2 text-sm text-gray-600">
+              選択された画像: {image.name} ({Math.round(image.size / 1024)}KB)
+            </div>
+          )}
         </div>
 
         {preview && (
           <div className="mb-4">
-            <img src={preview} alt="preview" className="w-24 h-24 object-cover border border-gray-300 rounded" />
+            <img
+              src={preview}
+              alt="preview"
+              className="w-24 h-24 object-cover border border-gray-300 rounded"
+            />
           </div>
         )}
 
         <button
           type="submit"
           disabled={loading}
-          className={`w-full py-2 px-4 rounded text-white ${loading ? 'bg-gray-500 cursor-not-allowed' : 'bg-blue-600 hover:bg-blue-700'}`}
-        >{loading ? '作成中...' : '作成'}</button>
+          className={`w-full py-2 px-4 rounded text-white ${
+            loading
+              ? "bg-gray-500 cursor-not-allowed"
+              : "bg-blue-600 hover:bg-blue-700"
+          }`}
+        >
+          {loading ? "作成中..." : "作成"}
+        </button>
       </form>
 
       {message && (
-        <div className={`mt-4 p-3 rounded text-sm border ${message.includes('エラー') || message.includes('失敗') ? 'bg-red-100 text-red-800 border-red-300' : 'bg-green-100 text-green-800 border-green-300'}`}>
+        <div
+          className={`mt-4 p-3 rounded text-sm border ${
+            message.includes("エラー") || message.includes("失敗")
+              ? "bg-red-100 text-red-800 border-red-300"
+              : "bg-green-100 text-green-800 border-green-300"
+          }`}
+        >
           {message}
         </div>
       )}
