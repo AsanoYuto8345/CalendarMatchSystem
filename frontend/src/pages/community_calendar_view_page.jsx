@@ -58,7 +58,7 @@ const CommunityCalendarViewPage = () => {
         for (let day = 1; day <= daysInMonth; day++) {
           const dateStr = `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
           promises.push(
-            axios.get(`http://localhost:5001/api/${communityId}/calendar/tag/get`, { params: { date: dateStr } })
+            axios.get(`${process.env.REACT_APP_API_SERVER_URL}/api/${communityId}/calendar/tag/get`, { params: { date: dateStr } })
               .then(res => res.data.data || [])
               .catch(err => {
                 // 404は無視、その他はログ

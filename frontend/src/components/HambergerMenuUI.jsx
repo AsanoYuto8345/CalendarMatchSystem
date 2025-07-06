@@ -164,7 +164,7 @@ const HambergerMenuUI = ({ selectedCommunityId, setSelectedCommunityId }) => {
               <div className="border-t pt-4 mt-4 space-y-2">
                 <button
                   className="block w-full text-left px-4 py-2 hover:bg-gray-100 text-base rounded"
-                  onClick={() => handleMenuItemClick('/auth/edit')}
+                  onClick={() => handleMenuItemClick(`/user/${userId}/edit`)}
                 >
                   ユーザ情報編集
                 </button>
