@@ -3,12 +3,9 @@ import os
 import secrets  # SID生成用
 import logging  # コーディング規約に沿ってログ出力を設定
 
-from typing import Optional
-
 # ロガー設定 (utils/logger.py があればそれを使用、なければ基本的な設定)
 try:
     from utils.logger import setup_logger
-
     user_management_logger = setup_logger(__name__)
 except ImportError:
     logging.basicConfig(level=logging.INFO)
@@ -29,12 +26,11 @@ class UserDataManagement:
         self.conn = None
         self.cursor = None
         self._connect_db()
-        self._create_tables_if_not_exists()  # テーブルが存在しない場合に作成
+        self._create_tables_if_not_exists()
 
     def _connect_db(self):
         """データベースに接続する内部メソッド"""
         try:
-            # dataフォルダが存在しない場合は作成
             os.makedirs(os.path.dirname(DATABASE_NAME), exist_ok=True)
             self.conn = sqlite3.connect(DATABASE_NAME)
             self.conn.row_factory = sqlite3.Row
@@ -95,8 +91,7 @@ class UserDataManagement:
         try:
             self._connect_db()
             self.cursor.execute(
-                "SELECT user_id, user_name, email, password, profile_image "
-                "FROM users WHERE user_id = ?",
+                "SELECT user_id, user_name, email, password, profile_image FROM users WHERE user_id = ?",
                 (user_id,)
             )
             user_data = self.cursor.fetchone()
@@ -110,9 +105,7 @@ class UserDataManagement:
                 }
                 return True, user_dict
             else:
-                user_management_logger.warning(
-                    f"User data not found for ID: {user_id}. (E2)"
-                )
+                user_management_logger.warning(f"User data not found for ID: {user_id}. (E2)")
                 return False, {}
         except sqlite3.Error as e:
             user_management_logger.error(f"Database error during user data search: {e}")
@@ -120,8 +113,7 @@ class UserDataManagement:
         finally:
             self._close_db()
 
-    
-    def make_sid(self, user_id: str) -> Optional[str]:
+    def make_sid(self, user_id: str):
         """
         M3 SID作成処理に対応
         ユーザIDを受け取り、F2 ユーザ認証情報にSIDを作成する。
@@ -137,14 +129,10 @@ class UserDataManagement:
             self.conn.commit()
             return sid
         except sqlite3.IntegrityError as e:
-            user_management_logger.warning(
-                f"SID creation failed for user_id {user_id}: {e}"
-            )
+            user_management_logger.warning(f"SID creation failed for user_id {user_id}: {e}")
             return None
         except sqlite3.Error as e:
-            user_management_logger.error(
-                f"Database error during SID creation for user_id {user_id}: {e}"
-            )
+            user_management_logger.error(f"Database error during SID creation for user_id {user_id}: {e}")
             raise
         finally:
             self._close_db()
@@ -156,15 +144,11 @@ class UserDataManagement:
         user_management_logger.info(f"Attempting to delete SID: {sid}")
         try:
             self._connect_db()
-            self.cursor.execute(
-                "DELETE FROM user_auth WHERE sid = ?",(sid,)
-            )
+            self.cursor.execute("DELETE FROM user_auth WHERE sid = ?", (sid,))
             self.conn.commit()
             return self.cursor.rowcount > 0
         except sqlite3.Error as e:
-            user_management_logger.error(
-                f"Database error during SID deletion for {sid}: {e}"
-            )
+            user_management_logger.error(f"Database error during SID deletion for {sid}: {e}")
             raise
         finally:
             self._close_db()
@@ -177,16 +161,13 @@ class UserDataManagement:
         try:
             self._connect_db()
             self.cursor.execute(
-                "INSERT INTO users (user_id, user_name, email, password, profile_image)"
-                " VALUES (?, ?, ?, ?, ?)",
+                "INSERT INTO users (user_id, user_name, email, password, profile_image) VALUES (?, ?, ?, ?, ?)",
                 (user_id, name, email, hashed_pw, icon)
             )
             self.conn.commit()
             return True
         except sqlite3.IntegrityError as e:
-            user_management_logger.warning(
-                f"User {user_id} or email {email} already exists: {e} (E3)"
-            )
+            user_management_logger.warning(f"User {user_id} or email {email} already exists: {e} (E3)")
             return False
         except sqlite3.Error as e:
             user_management_logger.error(f"Database error during user registration: {e}")
@@ -216,9 +197,7 @@ class UserDataManagement:
             params.append(icon)
 
         if not update_fields:
-            user_management_logger.warning(
-                f"No fields to update for user {user_id}."
-            )
+            user_management_logger.warning(f"No fields to update for user {user_id}.")
             return False
 
         params.append(user_id)
@@ -226,21 +205,14 @@ class UserDataManagement:
 
         try:
             self._connect_db()
-            self.cursor.execute(
-                f"UPDATE users SET {set_clause} WHERE user_id = ?",
-                tuple(params)
-            )
+            self.cursor.execute(f"UPDATE users SET {set_clause} WHERE user_id = ?", tuple(params))
             self.conn.commit()
             return self.cursor.rowcount > 0
         except sqlite3.IntegrityError as e:
-            user_management_logger.warning(
-                f"Integrity error during user update for {user_id}: {e}"
-            )
+            user_management_logger.warning(f"Integrity error during user update for {user_id}: {e}")
             return False
         except sqlite3.Error as e:
-            user_management_logger.error(
-                f"Database error during user update for {user_id}: {e}"
-            )
+            user_management_logger.error(f"Database error during user update for {user_id}: {e}")
             raise
         finally:
             self._close_db()
@@ -249,39 +221,53 @@ class UserDataManagement:
         """
         M7 ログイン用ユーザ検索処理に対応
         メールアドレスをもとに users テーブルからユーザ情報を取得する。
-        Args:
-            email (str): 検索対象のメールアドレス
         Returns:
-            tuple[bool, dict]: (True, ユーザ情報 dict) または (False, {}) を返す
+            tuple[bool, dict]
         """
         user_management_logger.info(f"Searching login user for email: {email}")
         try:
             self._connect_db()
             self.cursor.execute(
-                "SELECT user_id, user_name, email, password, profile_image "
-                "FROM users WHERE email = ?",
+                "SELECT user_id, user_name, email, password, profile_image FROM users WHERE email = ?",
                 (email,)
             )
             row = self.cursor.fetchone()
             if row:
                 user = {
-                    "id":         row["user_id"],
-                    "name":       row["user_name"],
-                    "email":      row["email"],
-                    "password":   row["password"],
-                    "icon":       row["profile_image"]
+                    "id": row["user_id"],
+                    "name": row["user_name"],
+                    "email": row["email"],
+                    "password": row["password"],
+                    "icon": row["profile_image"]
                 }
                 return True, user
             else:
-                user_management_logger.warning(
-                    f"Login user not found for email: {email}"
-                )
+                user_management_logger.warning(f"Login user not found for email: {email}")
                 return False, {}
         except sqlite3.Error as e:
-            user_management_logger.error(
-                f"Database error during login user search for {email}: {e}"
-            )
+            user_management_logger.error(f"Database error during login user search for {email}: {e}")
             raise
         finally:
             self._close_db()
-        
+
+    def validate_sid(self, user_id: str, sid: str) -> bool:
+        """
+        M8 SID検証処理に対応
+        user_authテーブルに指定されたuser_idとsidの組み合わせが存在するかをチェックする。
+        Returns:
+            bool: 存在する場合はTrue、存在しない場合はFalse
+        """
+        user_management_logger.info(f"Validating SID for user_id: {user_id}, sid: {sid}")
+        try:
+            self._connect_db()
+            self.cursor.execute(
+                "SELECT 1 FROM user_auth WHERE user_id = ? AND sid = ?",
+                (user_id, sid)
+            )
+            result = self.cursor.fetchone()
+            return result is not None
+        except sqlite3.Error as e:
+            user_management_logger.error(f"Database error during SID validation for user_id {user_id}: {e}")
+            raise
+        finally:
+            self._close_db()
