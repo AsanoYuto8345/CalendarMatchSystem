@@ -24,6 +24,7 @@ const CommunityMemberListPage = () => {
         // Step 1: コミュニティメンバーのuser_idリストを取得
         const res = await axios.get(`${process.env.REACT_APP_API_SERVER_URL}/api/community/members?community_id=${communityId}`);
         const userIds = res.data.members; // user_idのリストを想定
+        
 
         // Step 2: 各user_idに対応するユーザー詳細情報を取得
         const detailedMembers = await Promise.all(
@@ -38,6 +39,7 @@ const CommunityMemberListPage = () => {
             }
           })
         );
+        console.log(detailedMembers);
         setMemberList(detailedMembers);
       } catch (err) {
         console.error("メンバー情報の取得に失敗しました: ", err);
@@ -76,8 +78,8 @@ const CommunityMemberListPage = () => {
         memberList.map((member, index) => (
           <div key={index} className="flex items-center bg-gray-100 p-3 rounded-md mb-2">
             {/* user_icon_url と user_name を表示 */}
-            <img src={member.user_icon_url} alt={member.user_name} className="w-10 h-10 rounded-full mr-3" />
-            <span className="text-lg">{member.user_name}</span>
+            <img src={`${process.env.REACT_APP_API_SERVER_URL}/uploads/${member.icon_name}`} alt={member.name} className="w-10 h-10 rounded-full mr-3" />
+            <span className="text-lg">{member.name}</span>
           </div>
         ))
       ) : (
