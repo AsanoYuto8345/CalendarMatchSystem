@@ -7,7 +7,7 @@ const UserInfoEditM = () => {
 
   useEffect(() => {
     timerRef.current = setTimeout(() => {
-      navigate('/user/mypage');//とりあえず適当に
+      navigate('/');//とりあえず適当に
     }, 3000);
 
     return () => clearTimeout(timerRef.current);
@@ -15,7 +15,7 @@ const UserInfoEditM = () => {
 
   const handleClose = () => {
     clearTimeout(timerRef.current);  // タイマー解除
-    navigate('/user/mypage');       // 即遷移
+    navigate('/');       // 即遷移
   };
 
   return (

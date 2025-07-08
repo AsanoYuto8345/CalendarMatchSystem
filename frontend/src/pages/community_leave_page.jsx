@@ -29,7 +29,7 @@ const CommunityLeavePage = () => {
     axios.delete(`${process.env.REACT_APP_API_SERVER_URL}/api/community/${communityId}/members/${userId}`)
     .then(res => {
       setMsg("脱退しました");
-      navigate(`/community/${communityId}/calendar/view`);
+      navigate("/");
     })
     .catch(err => {
       setMsg("脱退処理に失敗しました");

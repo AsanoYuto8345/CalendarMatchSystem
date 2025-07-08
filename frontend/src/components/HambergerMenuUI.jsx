@@ -11,6 +11,7 @@ const HambergerMenuUI = ({ selectedCommunityId, setSelectedCommunityId }) => {
   const [menuOpen, setMenuOpen] = useState(false);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const [plusMenuOpen, setPlusMenuOpen] = useState(false);
+  const [selectedCommunityName, setSelectedCommunityName] = useState("");
 
   const navigate = useNavigate();
   const location = useLocation();
@@ -29,8 +30,9 @@ const HambergerMenuUI = ({ selectedCommunityId, setSelectedCommunityId }) => {
     setUserMenuOpen(false);
   };
 
-  const handleCommunityClick = (id) => {
+  const handleCommunityClick = (id, name) => {
     setSelectedCommunityId(id);
+    setSelectedCommunityName(name);
     navigate(`/community/${id}/calendar/view`);
     setMenuOpen(false);
     setPlusMenuOpen(false);
@@ -62,10 +64,38 @@ const HambergerMenuUI = ({ selectedCommunityId, setSelectedCommunityId }) => {
       .then((res) => {
         const joined = res.data.communities || [];
         setCommunities(joined);
-        if (joined.length > 0) setSelectedCommunityId(joined[0].id);
+        const urlCidMatch = location.pathname.match(/^\/community\/([^/]+)\//);
+        const cidFromUrl = urlCidMatch ? urlCidMatch[1] : '';
+
+        let targetCid = '';   // 最終的に採用する ID
+        let targetCname = '';   // 採用する名前
+
+        if (cidFromUrl) {
+          // URL に ID が含まれている ⇒ それを優先
+          const m = joined.find((c) => String(c.id) === String(cidFromUrl));
+          if (m) {
+            targetCid = m.id;
+            targetCname = m.name;
+          }
+        }
+
+        // URL に無い or 該当コミュニティが見つからない場合は先頭を採用
+        if (!targetCid && joined.length > 0) {
+          targetCid = joined[0].id;
+          targetCname = joined[0].name;
+        }
+
+        // state 反映（空ならリセット扱い）
+        setSelectedCommunityId(targetCid);
+        setSelectedCommunityName(targetCname);
+        /* ========== ここまで ========== */
       })
       .catch((e) => console.error(e));
-  }, []);
+
+
+
+  }, [location.pathname]);
+
 
   /* ------------------ JSX ------------------ */
   return (
@@ -88,9 +118,8 @@ const HambergerMenuUI = ({ selectedCommunityId, setSelectedCommunityId }) => {
 
       {/* スライドメニュー */}
       <div
-        className={`fixed top-0 left-0 h-screen bg-white shadow-lg z-50 transform transition-transform duration-300 ease-in-out ${
-          menuOpen ? 'translate-x-0' : '-translate-x-full'
-        }`}
+        className={`fixed top-0 left-0 h-screen bg-white shadow-lg z-50 transform transition-transform duration-300 ease-in-out ${menuOpen ? 'translate-x-0' : '-translate-x-full'
+          }`}
       >
         <div className="flex h-full">
           {/* ---------- 左：コミュニティ一覧 + ＋ ---------- */}
@@ -100,18 +129,32 @@ const HambergerMenuUI = ({ selectedCommunityId, setSelectedCommunityId }) => {
                 <button
                   key={comm.id}
                   title={comm.name}
-                  onClick={() => handleCommunityClick(comm.id)}
+                  onClick={() => handleCommunityClick(comm.id, comm.name)}
                   className="focus:outline-none"
                 >
-                  <img
-                    src={
-                      comm.iconUrl
-                        ? `${process.env.REACT_APP_API_SERVER_URL}/${comm.iconUrl}`
-                        : `${process.env.REACT_APP_API_SERVER_URL}/uploads/default_community_icon.png`
-                    }
-                    alt={comm.name}
-                    className="w-8 h-8 rounded-full"
-                  />
+                  {comm.iconUrl ? (
+                    /* ------------ 通常：画像がある ------------ */
+                    <img
+                      src={`${process.env.REACT_APP_API_SERVER_URL}/${comm.iconUrl}`}
+                      alt={comm.name}
+                      className="w-8 h-8 rounded-full object-cover"
+                      onError={(e) => {
+                        // 読み込み失敗時も頭文字フォールバック
+                        e.target.onerror = null;
+                        e.target.style.display = 'none';
+                        const initial = (comm.name || '').trim().charAt(0).toUpperCase() || '?';
+                        e.target.parentNode.insertAdjacentHTML(
+                          'afterbegin',
+                          `<div class="w-8 h-8 rounded-full bg-blue-500 text-white flex items-center justify-center font-bold">${initial}</div>`
+                        );
+                      }}
+                    />
+                  ) : (
+                    /* ------------ フォールバック：頭文字 ------------ */
+                    <div className="w-8 h-8 rounded-full bg-blue-500 text-white flex items-center justify-center font-bold">
+                      {(comm.name || '').trim().charAt(0).toUpperCase() || '?'}
+                    </div>
+                  )}
                 </button>
               ))}
 
@@ -172,6 +215,13 @@ const HambergerMenuUI = ({ selectedCommunityId, setSelectedCommunityId }) => {
           <div className="bg-white w-60 p-4 flex flex-col justify-between">
             <div>
               <h2 className="text-xl font-bold mb-4">メニュー</h2>
+
+
+              {selectedCommunityName && (
+                <p className="text-lg font-semibold text-gray-800 mt-2 mb-4">
+                  {selectedCommunityName}
+                </p>
+              )}
               <nav className="flex flex-col space-y-3">
                 <button
                   onClick={() =>
@@ -179,12 +229,11 @@ const HambergerMenuUI = ({ selectedCommunityId, setSelectedCommunityId }) => {
                       `/community/${selectedCommunityId}/calendar/view`
                     )
                   }
-                  className={`px-4 py-2 rounded text-left ${
-                    location.pathname ===
+                  className={`px-4 py-2 rounded text-left ${location.pathname ===
                     `/community/${selectedCommunityId}/calendar/view`
-                      ? 'bg-blue-200 font-semibold'
-                      : 'hover:bg-blue-100'
-                  }`}
+                    ? 'bg-blue-200 font-semibold'
+                    : 'hover:bg-blue-100'
+                    }`}
                 >
                   カレンダー
                 </button>
@@ -195,12 +244,11 @@ const HambergerMenuUI = ({ selectedCommunityId, setSelectedCommunityId }) => {
                       `/community/${selectedCommunityId}/members`
                     )
                   }
-                  className={`px-4 py-2 rounded text-left ${
-                    location.pathname ===
+                  className={`px-4 py-2 rounded text-left ${location.pathname ===
                     `/community/${selectedCommunityId}/members`
-                      ? 'bg-blue-200 font-semibold'
-                      : 'hover:bg-blue-100'
-                  }`}
+                    ? 'bg-blue-200 font-semibold'
+                    : 'hover:bg-blue-100'
+                    }`}
                 >
                   メンバー
                 </button>
@@ -211,12 +259,11 @@ const HambergerMenuUI = ({ selectedCommunityId, setSelectedCommunityId }) => {
                       `/community/${selectedCommunityId}/template_tag/view`
                     )
                   }
-                  className={`px-4 py-2 rounded text-left ${
-                    location.pathname ===
+                  className={`px-4 py-2 rounded text-left ${location.pathname ===
                     `/community/${selectedCommunityId}/template_tag/view`
-                      ? 'bg-blue-200 font-semibold'
-                      : 'hover:bg-blue-100'
-                  }`}
+                    ? 'bg-blue-200 font-semibold'
+                    : 'hover:bg-blue-100'
+                    }`}
                 >
                   テンプレートタグ一覧
                 </button>
