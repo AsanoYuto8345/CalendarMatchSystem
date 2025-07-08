@@ -25,8 +25,10 @@ const SignupUI = ({ onSubmitClick, msg }) => {
           type="email"
           name="email"
           id="email" // ★ここを追加
+          maxLength={50}
           className="w-full px-3 py-2 border border-gray-300 rounded"
           placeholder="example@example.com"
+          required
         />
         <small className="text-gray-500">半角英数（50文字以内）</small>
       </div>
@@ -38,8 +40,11 @@ const SignupUI = ({ onSubmitClick, msg }) => {
           type="password"
           name="password"
           id="password" // ★ここを追加
+          pattern="[A-Za-z0-9]*"
+          maxLength={20}
           className="w-full px-3 py-2 border border-gray-300 rounded"
           placeholder="パスワード"
+          required
         />
         <small className="text-gray-500">半角英数（20文字以内）</small>
       </div>
@@ -51,10 +56,12 @@ const SignupUI = ({ onSubmitClick, msg }) => {
           type="text"
           name="display_name"
           id="displayName" // ★ここを追加
+          maxLength={20}
           className="w-full px-3 py-2 border border-gray-300 rounded"
           placeholder="表示名"
+          required
         />
-        <small className="text-gray-500">半角英数（20文字以内）</small>
+        <small className="text-gray-500">半角英数日本語（20文字以内）</small>
       </div>
 
       <div className="mb-6">
