@@ -1,5 +1,5 @@
 /**
- * M7 ログイン処理画面
+ * M7 ログイン処理画面（バリデーション追加版）
  * - ユーザー認証を行い、ログイン成功時にトップページへ遷移
  * 作成者: 石田めぐみ
  */
@@ -32,6 +32,25 @@ const AuthLoginPage = () => {
   const handleLoginClick = () => {
     setErrorMsg('');
 
+    // --- 🔒 クライアント側バリデーション ---
+    if (!email || !password) {
+      setErrorMsg('メールアドレスとパスワードを入力してください。');
+      return;
+    }
+
+    const emailRegex = /^[\w.-]+@[\w.-]+\.[A-Za-z]{2,}$/;
+    if (!emailRegex.test(email)) {
+      setErrorMsg('メールアドレスの形式が不正です。');
+      return;
+    }
+
+    const passwordRegex = /^[A-Za-z0-9]{1,20}$/;
+    if (!passwordRegex.test(password)) {
+      setErrorMsg('パスワードは半角英数字20文字以内で入力してください。');
+      return;
+    }
+
+    // --- 🔐 API送信 ---
     axios.post(`${process.env.REACT_APP_API_SERVER_URL}/api/auth/login`, {
       email,
       pw: password
