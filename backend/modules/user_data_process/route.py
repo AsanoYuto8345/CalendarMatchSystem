@@ -9,7 +9,6 @@ from .user_data_process import UserDataProcess
 # Blueprintの定義。URLプレフィックスは /api/user とする
 user_data_bp = Blueprint('user_data', __name__, url_prefix='/api/user')
 
----
 
 ## User Registration
 
@@ -47,8 +46,6 @@ def register_user():
         # E1, E3のエラーハンドリング
         return jsonify({"error": result.get("error", "ユーザ登録失敗")}), \
                result.get("status", 500)
-
----
 
 ## User Data Editing
 
@@ -89,7 +86,6 @@ def edit_user_data():
         return jsonify({"error": result.get("error", "ユーザ情報編集失敗")}), \
                result.get("status", 500)
 
----
 
 ## User Data Retrieval
 

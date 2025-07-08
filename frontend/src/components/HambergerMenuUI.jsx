@@ -1,4 +1,4 @@
-// HambergerMenuUI.jsx  ※差分付きで全文
+// HambergerMenuUI.jsx
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import Cookies from 'js-cookie';
@@ -11,19 +11,21 @@ const HambergerMenuUI = ({ selectedCommunityId, setSelectedCommunityId }) => {
   const [menuOpen, setMenuOpen] = useState(false);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const [plusMenuOpen, setPlusMenuOpen] = useState(false);
+
   const navigate = useNavigate();
   const location = useLocation();
 
+  /* ------------------ ハンドラ ------------------ */
   const toggleMenu = () => {
-    setMenuOpen(!menuOpen);
+    setMenuOpen((prev) => !prev);
     setUserMenuOpen(false);
     setPlusMenuOpen(false);
   };
 
-  const toggleUserMenu = () => setUserMenuOpen(!userMenuOpen);
+  const toggleUserMenu = () => setUserMenuOpen((prev) => !prev);
 
   const togglePlusMenu = () => {
-    setPlusMenuOpen(!plusMenuOpen);
+    setPlusMenuOpen((prev) => !prev);
     setUserMenuOpen(false);
   };
 
@@ -41,9 +43,12 @@ const HambergerMenuUI = ({ selectedCommunityId, setSelectedCommunityId }) => {
     setPlusMenuOpen(false);
   };
 
+  /* ------------------ 初期データ取得 ------------------ */
   useEffect(() => {
     const uid = Cookies.get('userId');
     setUserId(uid);
+
+    if (!uid) return;
 
     axios
       .get(`${process.env.REACT_APP_API_SERVER_URL}/api/user/get/${uid}`)
@@ -62,6 +67,7 @@ const HambergerMenuUI = ({ selectedCommunityId, setSelectedCommunityId }) => {
       .catch((e) => console.error(e));
   }, []);
 
+  /* ------------------ JSX ------------------ */
   return (
     <div className="relative">
       {/* ハンバーガーアイコン */}
@@ -72,6 +78,7 @@ const HambergerMenuUI = ({ selectedCommunityId, setSelectedCommunityId }) => {
         ☰
       </button>
 
+      {/* オーバーレイ */}
       {menuOpen && (
         <div
           className="fixed inset-0 bg-black bg-opacity-50 z-40"
@@ -79,14 +86,14 @@ const HambergerMenuUI = ({ selectedCommunityId, setSelectedCommunityId }) => {
         />
       )}
 
-      {/* スライドメニュー本体 */}
+      {/* スライドメニュー */}
       <div
         className={`fixed top-0 left-0 h-screen bg-white shadow-lg z-50 transform transition-transform duration-300 ease-in-out ${
           menuOpen ? 'translate-x-0' : '-translate-x-full'
         }`}
       >
         <div className="flex h-full">
-          {/* --- 左：コミュニティ一覧 + ＋ --- */}
+          {/* ---------- 左：コミュニティ一覧 + ＋ ---------- */}
           <div className="flex flex-col justify-between bg-gray-200 w-16 py-4">
             <div className="flex flex-col items-center space-y-4 relative">
               {communities.map((comm) => (
@@ -135,16 +142,33 @@ const HambergerMenuUI = ({ selectedCommunityId, setSelectedCommunityId }) => {
             {/* ユーザーアイコン */}
             <div className="flex flex-col items-center w-full px-2">
               <button onClick={toggleUserMenu} className="focus:outline-none">
-                <img
-                  src={`${process.env.REACT_APP_API_SERVER_URL}/uploads/${userInfo.icon_name}`}
-                  alt="User"
-                  className="w-8 h-8 rounded-full"
-                />
+                {userInfo.icon_name ? (
+                  <img
+                    src={`${process.env.REACT_APP_API_SERVER_URL}${userInfo.icon_name}`}
+                    alt={userInfo.name || 'user'}
+                    className="w-8 h-8 rounded-full object-cover"
+                    onError={(e) => {
+                      e.target.onerror = null;
+                      e.target.style.display = 'none';
+                      const initial =
+                        (userInfo.name || '').trim().charAt(0).toUpperCase() ||
+                        '?';
+                      e.target.parentNode.insertAdjacentHTML(
+                        'afterbegin',
+                        `<div class="w-8 h-8 rounded-full bg-blue-500 text-white flex items-center justify-center font-bold">${initial}</div>`
+                      );
+                    }}
+                  />
+                ) : (
+                  <div className="w-8 h-8 rounded-full bg-blue-500 text-white flex items-center justify-center font-bold">
+                    {(userInfo.name || '').trim().charAt(0).toUpperCase() || '?'}
+                  </div>
+                )}
               </button>
             </div>
           </div>
 
-          {/* --- 右：メインメニュー --- */}
+          {/* ---------- 右：メインメニュー ---------- */}
           <div className="bg-white w-60 p-4 flex flex-col justify-between">
             <div>
               <h2 className="text-xl font-bold mb-4">メニュー</h2>
@@ -164,6 +188,7 @@ const HambergerMenuUI = ({ selectedCommunityId, setSelectedCommunityId }) => {
                 >
                   カレンダー
                 </button>
+
                 <button
                   onClick={() =>
                     handleMenuItemClick(
@@ -179,6 +204,7 @@ const HambergerMenuUI = ({ selectedCommunityId, setSelectedCommunityId }) => {
                 >
                   メンバー
                 </button>
+
                 <button
                   onClick={() =>
                     handleMenuItemClick(
@@ -195,12 +221,12 @@ const HambergerMenuUI = ({ selectedCommunityId, setSelectedCommunityId }) => {
                   テンプレートタグ一覧
                 </button>
 
-                {/* ▼ 追加: selectedCommunityId が空でないときだけ表示 */}
+                {/* コミュニティ脱退 */}
                 {selectedCommunityId && (
                   <button
                     onClick={() =>
                       handleMenuItemClick(
-                        `/community/${selectedCommunityId}/leave` // 仮置きリンク
+                        `/community/${selectedCommunityId}/leave`
                       )
                     }
                     className="px-4 py-2 rounded text-left hover:bg-red-100 text-red-600"

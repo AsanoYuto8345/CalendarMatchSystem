@@ -77,7 +77,7 @@ const UserInfoEditPage = () => {
       });
 
       // 編集完了後に遷移
-      navigate("/user/profile"); // 適切な遷移先に変更してください
+      navigate("/"); // 適切な遷移先に変更してください
     } catch (err) {
       console.error("ユーザ情報の更新に失敗しました:", err.response ? err.response.data : err);
       setError(err.response?.data?.error || "ユーザ情報の更新に失敗しました");
