@@ -1,11 +1,11 @@
 /**
  * ログインUIコンポーネント
  * 入力欄とログインボタン + ホーム画面ボタンを表示
- * 作成者: 石田めぐみ
+ * 作成者: 石田めぐみ（入力制限付き）
  */
 
 import React from 'react'
-import { useNavigate } from 'react-router-dom'  // ★ 追加
+import { useNavigate } from 'react-router-dom'
 
 /**
  * ログインUI
@@ -24,7 +24,7 @@ const LoginUI = ({
   onLoginClick,
   errorMsg
 }) => {
-  const navigate = useNavigate()          // ★ 追加
+  const navigate = useNavigate()
 
   return (
     <div className="max-w-md mx-auto mt-20 p-6 bg-white rounded shadow">
@@ -39,6 +39,8 @@ const LoginUI = ({
           id="loginEmail"
           value={email}
           onChange={onEmailChange}
+          maxLength={50}
+          required
           className="w-full px-3 py-2 border rounded"
           placeholder="example@example.com"
         />
@@ -53,9 +55,13 @@ const LoginUI = ({
           id="loginPassword"
           value={password}
           onChange={onPasswordChange}
+          pattern="[A-Za-z0-9]*"
+          maxLength={20}
+          required
           className="w-full px-3 py-2 border rounded"
           placeholder="********"
         />
+        <small className="text-gray-500">半角英数字20文字以内</small>
       </div>
 
       {errorMsg && <p className="text-red-500 text-sm mb-4">{errorMsg}</p>}
@@ -67,7 +73,6 @@ const LoginUI = ({
         ログイン
       </button>
 
-      {/* ▼ 追加: navigate で / へ遷移 */}
       <button
         onClick={() => navigate('/')}
         className="w-full mt-3 py-2 bg-gray-500 hover:bg-gray-600 text-white rounded"
