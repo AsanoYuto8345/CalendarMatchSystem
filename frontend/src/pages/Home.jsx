@@ -1,24 +1,21 @@
-// frontend/src/App.js
-import React, { useEffect, useState } from "react";
+import React from 'react';
+import { BrowserRouter as Router, Routes, Route, useNavigate } from 'react-router-dom';
 
 function App() {
-  const [messages, setMessages] = useState([]);
-
-  useEffect(() => {
-    fetch("http://localhost:5001/api/messages")
-      .then((res) => res.json())
-      .then((data) => setMessages(data))
-      .catch((err) => console.error(err));
-  }, []);
-
+  const navigate = useNavigate();
+  
   return (
-    <div style={{ padding: 20 }}>
-      <h1>Flask + React + SQLite のcalenderアプリサンル</h1>
-      <ul>
-        {messages.map((m) => (
-          <li key={m.id}>{m.text}</li>
-        ))}
-      </ul>
+    <div className="min-h-screen bg-gray-100 flex items-center justify-center p-6import { BrowserRouter as Router, Routes, Route, useNavigate } from 'react-router-dom';">
+      <div className="text-center">
+        <h1 className="text-7xl font-extrabold text-blue-600">CalendarMatchingSystem</h1>
+        <p className="mt-6 text-3xl text-gray-700">05班</p>
+        <button
+          onClick={() => navigate('/auth/signup')}
+          className="mt-10 px-6 py-3 bg-blue-500 text-white text-xl rounded hover:bg-blue-600"
+        >
+          サインアップ
+        </button>
+      </div>
     </div>
   );
 }

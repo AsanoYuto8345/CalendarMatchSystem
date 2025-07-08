@@ -29,7 +29,7 @@ const CommunityLeavePage = () => {
     axios.delete(`${process.env.REACT_APP_API_SERVER_URL}/api/community/${communityId}/members/${userId}`)
     .then(res => {
       setMsg("脱退しました");
-      navigate('/community/calendar/view');
+      navigate(`/community/${communityId}/calendar/view`);
     })
     .catch(err => {
       setMsg("脱退処理に失敗しました");
@@ -40,12 +40,13 @@ const CommunityLeavePage = () => {
   const onRejectClick = () => {
     // community_calnedar_view_pageに遷移
 
-    navigate('/community/calendar/view');
+    navigate(`/community/${communityId}/calendar/view`);
   }
 
   useEffect(() => {
-    axios.get(`${process.env.REACT_APP_API_SERVER_URL}/api/community/${communityId}`)
+    axios.get(`${process.env.REACT_APP_API_SERVER_URL}/api/community/info_by_id?community_id=${communityId}`)
       .then(res => {
+        console.log(res.data);
         setCommunityName(res.data.community_name); 
       })
       .catch(err => {

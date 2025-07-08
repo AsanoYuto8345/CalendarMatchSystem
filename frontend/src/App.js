@@ -2,6 +2,8 @@
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 
 import Home from "./pages/Home";
+import AppLayout from "./AppLayout";
+
 import { AuthRoutes } from "./routes/AuthRoutes";
 import { UserRoutes } from "./routes/UserRoutes";
 import { CommunityRoutes } from "./routes/CommunityRoutes";
@@ -13,13 +15,16 @@ export default function App() {
   return (
     <BrowserRouter>
       <Routes>
-        {/* ホーム画面 (メッセージ一覧) */}
-        <Route path="/" element={<Home />} />
+        {/* 共通レイアウトに包むルート */}
+        <Route path="/" element={<AppLayout />}>
+          <Route index element={<Home />} />
+          {/* 他のページルートもここにネスト */}
+          {UserRoutes}
+          {CommunityRoutes}
+        </Route>
 
-        {/* 各機能用のルーティング */}
+        {/* ログインページなど、レイアウト不要なルート */}
         {AuthRoutes}
-        {UserRoutes}
-        {CommunityRoutes}
       </Routes>
     </BrowserRouter>
   );
