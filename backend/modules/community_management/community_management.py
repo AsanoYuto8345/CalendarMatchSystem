@@ -137,8 +137,7 @@ class CommunityManagement:
             "community_id": community_id
         }), 201
 
-    def getcommunityInfo(self):
-        community_id = request.args.get("community_id", "").strip()
+    def get_community_info(self, community_id):
 
         if not community_id:
             return jsonify({"error": "コミュニティIDが未指定または不正です"}), 400

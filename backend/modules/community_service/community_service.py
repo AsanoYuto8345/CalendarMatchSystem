@@ -339,7 +339,7 @@ class CommunityService:
         community_id = request.args.get("community_id", "").strip()
         from modules.community_management.community_management import CommunityManagement
         cm = CommunityManagement()
-        return cm.get_community_info_by_id(community_id)
+        return cm.get_community_info(community_id)
 
     def get_community_info_by_tag_id(self):
         """
