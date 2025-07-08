@@ -7,6 +7,7 @@ from .user_data_management import UserDataManagement
 import logging
 
 # ロガー設定 (utils/logger.py があればそれを使用、なければ基本的な設定)
+# 作成者:関太生
 try:
     from utils.logger import setup_logger
     user_logger = setup_logger(__name__)

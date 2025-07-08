@@ -1,9 +1,11 @@
 import sqlite3
 import os
 import secrets  # SID生成用
-import logging  # コーディング規約に沿ってログ出力を設定
+import logging  # コーディング規約に沿ってログ出力を設定」
 
 # ロガー設定 (utils/logger.py があればそれを使用、なければ基本的な設定)
+
+# 作成者:関太生
 try:
     from utils.logger import setup_logger
     user_management_logger = setup_logger(__name__)
