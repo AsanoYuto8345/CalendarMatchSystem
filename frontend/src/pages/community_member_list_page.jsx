@@ -8,7 +8,7 @@ import axios from 'axios';
  * M24 メンバー画面
  * 所属するコミュニティのメンバー一覧を表示する。
  *
- * 作成者: (TBD)
+ * 作成者:関太生
  */
 const CommunityMemberListPage = () => {
   const { communityId } = useParams(); // URLからcommunityIdを取得
