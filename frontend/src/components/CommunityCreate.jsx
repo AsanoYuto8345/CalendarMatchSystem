@@ -37,7 +37,7 @@ function CommunityCreate() {
       if (image) formData.append("image", image);
 
       const response = await fetch(
-        `${process.env.REACT_APP_API_SERVER_URL}api/community/create`,
+        `${process.env.REACT_APP_API_SERVER_URL}/api/community/create`,
         {
           method: "POST",
           body: formData,

@@ -70,41 +70,57 @@ class CommunityService:
             "community_id": new_id,
             "image_path": image_path
         }), 201
-
+        
     def join(self):
         """
-        M3 指定されたユーザを既存のコミュニティに参加させる。
+        M3: 指定されたユーザーを既存のコミュニティに参加させる（UUID対応）
         """
         data = request.get_json() or {}
-        name = data.get("community_name", "").strip()
+        community_name = data.get("community_name", "").strip()
         user_id = data.get("user_id", "").strip()
+
         if not user_id:
             return jsonify({"error": "ユーザーIDが未指定です"}), 400
 
-        db = get_db()
-        row = db.execute(
-            "SELECT id FROM communities WHERE name = ?", (name,)
-        ).fetchone()
-        if not row:
-            return jsonify({"error": f"'{name}' は存在しません"}), 404
+        if not community_name:
+            return jsonify({"error": "コミュニティ名が未指定です"}), 400
 
-        community_id = row["id"]
-        # UUID文字列を生成して参加履歴を登録
-        member_id = uuid.uuid4().hex
+        db = get_db()
+
+        # コミュニティ存在確認（UUID id を取得）
+        result = db.execute(
+            "SELECT id FROM communities WHERE name = ?", (community_name,)
+        ).fetchone()
+
+        if result is None:
+            return jsonify({"error": f"'{community_name}' は存在しません"}), 404
+
+        community_id = result["id"]  # UUID
+
+        # 既に参加しているかチェック
+        already_joined = db.execute(
+            "SELECT 1 FROM members WHERE user_id = ? AND community_id = ?",
+            (user_id, community_id)
+        ).fetchone()
+
+        if already_joined:
+            return jsonify({"error": "すでに参加済みです"}), 409
+
+        # 参加処理
         try:
             db.execute(
-                "INSERT INTO members (id, user_id, community_id) VALUES (?, ?, ?)",
-                (member_id, user_id, community_id)
+                "INSERT INTO members (user_id, community_id) VALUES (?, ?)",
+                (user_id, community_id)
             )
             db.commit()
         except Exception as e:
-            logger.warning(f"❌ 参加処理失敗: {e}")
+            logger.exception(f"❌ DB登録失敗: user_id={user_id}, community_id={community_id}")
             return jsonify({"error": "参加処理中にエラーが発生しました"}), 500
 
         return jsonify({
             "result": True,
-            "message": f"'{name}' に参加しました",
-            "community_name": name,
+            "message": f"「{community_name}」に参加しました",
+            "community_name": community_name,
             "community_id": community_id
         }), 200
 
@@ -136,26 +152,40 @@ class CommunityService:
         ]
         return jsonify({"communities": communities}), 200
 
-    def leave(self):
+    def leave(self, community_id, user_id): 
         """
-        M4 指定されたユーザをコミュニティから脱退させる。
+        M4: 指定されたユーザを指定されたコミュニティから削除する（正式版）
+
+        Args:
+                community_id (str): コミュニティID（URLパラメータ）
+                user_id (str): ユーザID（URLパラメータ）
+
+        Returns:
+                Response: JSONレスポンス（結果、メッセージ）
         """
-        data = request.get_json() or {}
-        user_id = data.get("user_id", "").strip()
-        community_id = data.get("community_id", "").strip()
-        if not user_id or not community_id:
-            return jsonify({"error": "ID未入力です"}), 400
+        if not user_id.strip() or not community_id.strip():
+                return jsonify({"error": "ID未入力または形式不正です"}), 400
 
         db = get_db()
+        row = db.execute(
+                "SELECT id FROM communities WHERE id = ?", (community_id,)
+        ).fetchone()
+
+        if row is None:
+                return jsonify({"error": "指定されたコミュニティは存在しません"}), 404
+
         db.execute(
-            "DELETE FROM members WHERE user_id = ? AND community_id = ?",
-            (user_id, community_id)
+                "DELETE FROM members WHERE user_id = ? AND community_id = ?",
+                (user_id, community_id)
         )
         db.commit()
+
         return jsonify({
-            "result": True,
-            "message": f"ユーザ '{user_id}' はコミュニティ {community_id} を脱退しました"
+                "result": True,
+                "message": f"ユーザ '{user_id}' はコミュニティ {community_id} を脱退しました"
         }), 200
+
+
 
     def edit_tags(self):
         """
@@ -309,7 +339,7 @@ class CommunityService:
         community_id = request.args.get("community_id", "").strip()
         from modules.community_management.community_management import CommunityManagement
         cm = CommunityManagement()
-        return cm.get_community_info_by_id(community_id)
+        return cm.get_community_info(community_id)
 
     def get_community_info_by_tag_id(self):
         """

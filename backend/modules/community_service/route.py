@@ -28,12 +28,12 @@ def join():
     """
     return service.join()
 
-@community_bp.route("/leave", methods=["DELETE"])
-def leave():
+@community_bp.route("/<string:community_id>/members/<string:user_id>", methods=["DELETE"])
+def leave(community_id, user_id):
     """
-    M4: コミュニティ脱退処理
+    M4: コミュニティ脱退処理（DELETE）
     """
-    return service.leave()
+    return service.leave(community_id, user_id)
 
 @community_bp.route("/template_tags", methods=["POST", "PUT", "DELETE"])
 def edit_tags():
