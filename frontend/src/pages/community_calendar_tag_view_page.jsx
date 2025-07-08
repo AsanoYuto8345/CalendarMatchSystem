@@ -26,7 +26,7 @@ const CommunityCalendarTagViewPage = () => {
         // 日付形式の検証 (例:YYYY-MM-DD)
         if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) {
           setError("日付の指定が不正です。");
-          navigate('/community/calendar/view');
+          //navigate('/community/calendar/view');
           return;
         }
 
