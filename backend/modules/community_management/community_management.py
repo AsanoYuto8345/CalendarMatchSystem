@@ -44,6 +44,8 @@ def init_db():
             tag TEXT NOT NULL,
             color_code TEXT NOT NULL,
             FOREIGN KEY (community_id) REFERENCES communities(id)
+            
+            UNIQUE (community_id, tag)
         )
     """)
       # members テーブル（モデルに合わせて id を主キーにした文字列型）
