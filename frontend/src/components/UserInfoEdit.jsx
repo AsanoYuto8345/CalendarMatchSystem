@@ -71,7 +71,7 @@ const UserInfoEdit = ({ name = "", iconUrl = "", onSubmit }) => {
         {previewIcon ? (
           <img
             src={previewIcon}
-            alt="アイコンプレビュー"
+            alt="画像"
             className="w-24 h-24 mb-2 rounded-full object-cover"
           />
         ) : (

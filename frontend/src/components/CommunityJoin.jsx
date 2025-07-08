@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { FaCamera } from 'react-icons/fa';
 import axios from 'axios';
 import Cookies from 'js-cookie'; // ← 追加
@@ -6,6 +7,9 @@ import Cookies from 'js-cookie'; // ← 追加
 function CommunityJoin() {
   const [communityName, setCommunityName] = useState('');
   const [showSuccessModal, setShowSuccessModal] = useState(false);
+  const [communityId, setCommnityId] = useState("");
+
+  const navigate = useNavigate();
 
   const handleJoin = async (e) => {
     e.preventDefault();
@@ -16,10 +20,12 @@ function CommunityJoin() {
     }
 
     try {
-      await axios.post(`${process.env.REACT_APP_API_SERVER_URL}/api/community/join`, {
+      const res = await axios.post(`${process.env.REACT_APP_API_SERVER_URL}/api/community/join`, {
         community_name: communityName,
         user_id: userId
       });
+      console.log(res);
+      setCommnityId(res.data.community_id);
       setShowSuccessModal(true);
     } catch (error) {
       alert(
@@ -37,7 +43,7 @@ function CommunityJoin() {
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div className="bg-white p-8 rounded-lg relative min-w-[300px] text-center shadow-lg">
             <button
-              onClick={() => setShowSuccessModal(false)}
+              onClick={() => navigate(`/community/${communityId}/calendar/view`)}
               className="absolute top-2 right-2 text-xl text-gray-500 hover:text-black"
             >
               ×
