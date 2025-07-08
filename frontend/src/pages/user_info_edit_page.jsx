@@ -12,53 +12,75 @@ import UserInfoEdit from "../components/UserInfoEdit";
  * - プロフィール情報を取得・編集する
  */
 const UserInfoEditPage = () => {
-  const userId = Cookies.get("userId");
+  const userId = Cookies.get("userId"); // ユーザーIDはCookieから取得
   const navigate = useNavigate();
 
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
-  const [iconUrl, setIconUrl] = useState("");
+  const [iconUrl, setIconUrl] = useState(""); // UIで表示するアイコンURL
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(true);
 
   // 初期ユーザ情報の取得
   useEffect(() => {
-    // if (!userId) {
-    //   setError("ユーザIDが見つかりません (E1)");
-    //   setLoading(false);
-    //   return;
-    // }
+    if (!userId) {
+      setError("ユーザIDが見つかりません。ログインしてください。");
+      setLoading(false);
+      // 必要であればログインページへリダイレクト
+      // navigate("/login");
+      return;
+    }
 
     axios
-      .get(`${process.env.REACT_APP_API_SERVER_URL}/api/user/${userId}`)
+      .get(`${process.env.REACT_APP_API_SERVER_URL}/api/user/get/${userId}`) // GETエンドポイントを修正
       .then((res) => {
-        const { name, email, icon_url } = res.data;
-        setName(name);
-        setEmail(email);
-        setIconUrl(icon_url);
+        const { user_data } = res.data; // レスポンスの構造が { user_data: {...} } に変更されている
+        setName(user_data.name);
+        setEmail(user_data.email);
+        setIconUrl(user_data.icon_name); // icon_name を iconUrl としてセット
       })
       .catch((err) => {
-        // console.error(err);
-        // setError("ユーザ情報の取得に失敗しました (E2)");
+        console.error("ユーザ情報の取得に失敗しました:", err);
+        setError("ユーザ情報の取得に失敗しました。");
       })
       .finally(() => setLoading(false));
-  }, [userId]);
+  }, [userId, navigate]); // navigate を依存配列に追加
 
   // 送信ハンドラ
   const handleSubmit = async ({ name, pw, iconFile }) => {
     try {
       const formData = new FormData();
+      formData.append("user_id", userId); // user_id を FormData に追加
       formData.append("name", name);
-      if (pw) formData.append("pw", pw);
-      if (iconFile) formData.append("icon", iconFile);
+      // パスワードが入力されている場合のみ追加
+      if (pw) {
+        formData.append("password", pw); // キーを "password" に修正
+      }
+      // アイコンファイルが選択されている場合のみ追加
+      if (iconFile) {
+        formData.append("icon_file", iconFile); // キーを "icon_file" に修正
+      } else if (iconFile === null && iconUrl !== "") {
+        // アイコンをクリアしたい場合など、iconFileがnullで元々アイコンがあった場合
+        // 例えば、UIに「アイコンを削除」ボタンを設け、そのボタンが押されたときに
+        // `setNewIconFile(false)` のような状態をセットして、`data_edit`に伝える。
+        // 現状のUIでは「アイコン画像を選択」しかないので、このケースは発生しないが、
+        // 将来的な拡張のためにコメントとして残しておく。
+        // formData.append("icon_file", ""); // または特別なフラグ
+      }
 
-      await axios.put(`${process.env.REACT_APP_API_SERVER_URL}/api/user/${userId}`, formData);
+
+      // PUTリクエストのURLとデータの形式を修正
+      await axios.put(`${process.env.REACT_APP_API_SERVER_URL}/api/user/edit`, formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data', // ファイルを送信するため必要
+        },
+      });
 
       // 編集完了後に遷移
-      navigate("/user/profile");
+      navigate("/user/profile"); // 適切な遷移先に変更してください
     } catch (err) {
-      console.error(err);
-      setError("ユーザ情報の更新に失敗しました");
+      console.error("ユーザ情報の更新に失敗しました:", err.response ? err.response.data : err);
+      setError(err.response?.data?.error || "ユーザ情報の更新に失敗しました");
     }
   };
 
