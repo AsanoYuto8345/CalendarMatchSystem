@@ -10,6 +10,7 @@ const UserInfoEdit = ({ name = "", iconUrl = "", onSubmit }) => {
   const [newPw, setNewPw] = useState("");
   const [newIconFile, setNewIconFile] = useState(null);
   const [previewIcon, setPreviewIcon] = useState(iconUrl);
+  const [error, setError] = useState(""); // ← エラーメッセージ用ステート追加
 
   // input fileの参照を保持
   const fileInputRef = useRef(null);
@@ -32,7 +33,28 @@ const UserInfoEdit = ({ name = "", iconUrl = "", onSubmit }) => {
     }
   };
 
+  // 送信処理（バリデーションあり）
   const handleSubmit = () => {
+    // 表示名のバリデーション
+    if (newName.length > 20) {
+      setError("表示名は20文字以内で入力してください。");
+      return;
+    }
+
+    // パスワードのバリデーション（空でない場合のみチェック）
+    if (newPw) {
+      if (newPw.length > 20) {
+        setError("パスワードは20文字以内で入力してください。");
+        return;
+      }
+      if (!/^[A-Za-z0-9]+$/.test(newPw)) {
+        setError("パスワードは半角英数字のみ使用できます。");
+        return;
+      }
+    }
+
+    // バリデーション通過 → エラー解除＆送信
+    setError("");
     onSubmit({
       name: newName,
       pw: newPw || undefined,
@@ -51,6 +73,7 @@ const UserInfoEdit = ({ name = "", iconUrl = "", onSubmit }) => {
           type="text"
           value={newName}
           onChange={(e) => setNewName(e.target.value)}
+          maxLength={20} // ← 入力制限（補助的）
         />
       </div>
 
@@ -61,6 +84,8 @@ const UserInfoEdit = ({ name = "", iconUrl = "", onSubmit }) => {
           type="password"
           value={newPw}
           onChange={(e) => setNewPw(e.target.value)}
+          maxLength={20} // ← 入力制限（補助的）
+          pattern="[A-Za-z0-9]*"
         />
       </div>
 
@@ -114,6 +139,13 @@ const UserInfoEdit = ({ name = "", iconUrl = "", onSubmit }) => {
           アイコン画像を選択
         </button>
       </div>
+
+      {/* エラーメッセージ表示 */}
+      {error && (
+        <div className="mb-4 text-red-500 text-sm text-center">
+          {error}
+        </div>
+      )}
 
       <button
         className="w-full py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
