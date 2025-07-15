@@ -225,9 +225,13 @@ const HambergerMenuUI = ({ selectedCommunityId, setSelectedCommunityId }) => {
               <nav className="flex flex-col space-y-3">
                 <button
                   onClick={() =>
-                    handleMenuItemClick(
-                      `/community/${selectedCommunityId}/calendar/view`
-                    )
+                    {
+                      if(selectedCommunityId){
+                        handleMenuItemClick(
+                          `/community/${selectedCommunityId}/calendar/view`
+                        )
+                      }
+                    }
                   }
                   className={`px-4 py-2 rounded text-left ${location.pathname ===
                     `/community/${selectedCommunityId}/calendar/view`
@@ -240,9 +244,13 @@ const HambergerMenuUI = ({ selectedCommunityId, setSelectedCommunityId }) => {
 
                 <button
                   onClick={() =>
-                    handleMenuItemClick(
-                      `/community/${selectedCommunityId}/members`
-                    )
+                    { 
+                      if(selectedCommunityId){
+                        handleMenuItemClick(
+                          `/community/${selectedCommunityId}/members`
+                        )
+                      }
+                    }
                   }
                   className={`px-4 py-2 rounded text-left ${location.pathname ===
                     `/community/${selectedCommunityId}/members`
@@ -255,9 +263,13 @@ const HambergerMenuUI = ({ selectedCommunityId, setSelectedCommunityId }) => {
 
                 <button
                   onClick={() =>
-                    handleMenuItemClick(
-                      `/community/${selectedCommunityId}/template_tag/view`
-                    )
+                  {
+                    if(selectedCommunityId){
+                      handleMenuItemClick(
+                        `/community/${selectedCommunityId}/template_tag/view`
+                      )
+                    }
+                  }
                   }
                   className={`px-4 py-2 rounded text-left ${location.pathname ===
                     `/community/${selectedCommunityId}/template_tag/view`
