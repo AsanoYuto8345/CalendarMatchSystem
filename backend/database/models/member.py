@@ -1,4 +1,8 @@
 # backend/database/models/member.py
+"""
+コミュニティメンバー定義
+作成者: 遠藤信輝
+"""
 from app import db
 
 class MemberModel(db.Model):
