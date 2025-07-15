@@ -1,3 +1,4 @@
+//M13コミュニティ参加画面　作成者：遠藤信輝
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { FaCamera } from 'react-icons/fa';

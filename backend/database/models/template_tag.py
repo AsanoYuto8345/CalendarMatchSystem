@@ -1,6 +1,7 @@
 # backend/database/models/template_tag.py
 """
 テンプレートタグモデル定義
+作成者: 遠藤信輝
 """
 
 from app import db

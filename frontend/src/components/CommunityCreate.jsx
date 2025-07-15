@@ -1,17 +1,14 @@
+//M11コミュニティ作成画面　作成者：遠藤信輝
 import React, { useState } from "react";
-import { useNavigate } from "react-router-dom";
 import Cookies from "js-cookie";
 
 function CommunityCreate() {
-  const [communityId, setCommnityId] = useState("");
   const [communityName, setCommunityName] = useState("");
   const [image, setImage] = useState(null);
   const [message, setMessage] = useState("");
   const [preview, setPreview] = useState("");
   const [loading, setLoading] = useState(false);
   const [showSuccessModal, setShowSuccessModal] = useState(false);
-
-  const navigate = useNavigate();
 
   const handleImageChange = (e) => {
     const file = e.target.files[0];
@@ -52,8 +49,6 @@ function CommunityCreate() {
       let data;
       try {
         data = JSON.parse(text);
-        console.log(data);
-        setCommnityId(data.communityId);
       } catch {
         setMessage(
           `サーバーエラー: レスポンスがJSONではありません (${response.status})`
@@ -103,7 +98,7 @@ function CommunityCreate() {
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div className="bg-white p-8 rounded-lg relative min-w-[300px] text-center shadow-lg">
             <button
-              onClick={() => navigate(`/community/${communityId}/calendar/view`)}
+              onClick={() => setShowSuccessModal(false)}
               className="absolute top-2 right-2 text-xl text-gray-500 hover:text-black"
             >
               ×

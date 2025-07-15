@@ -2,6 +2,7 @@
 """
 C9 コミュニティ情報管理部のルーティング
 エンドポイント経由で管理機能を提供する。
+作成者: 遠藤信輝
 """
 
 from flask import Blueprint, request
