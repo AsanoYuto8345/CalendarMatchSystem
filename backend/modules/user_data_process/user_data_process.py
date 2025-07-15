@@ -1,6 +1,6 @@
 # user_data_process.py
 # C3 ユーザ情報処理部のM1, M2, M3, M4モジュールを実装したUserProcessクラス
-# 作成者: [担当者の名前]
+# 作成者:関太生
 
 import uuid
 import hashlib

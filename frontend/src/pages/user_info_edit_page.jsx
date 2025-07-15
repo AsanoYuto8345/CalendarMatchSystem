@@ -26,58 +26,46 @@ const UserInfoEditPage = () => {
     if (!userId) {
       setError("ユーザIDが見つかりません。ログインしてください。");
       setLoading(false);
-      // 必要であればログインページへリダイレクト
-      // navigate("/login");
+      // navigate("/login"); // 必要ならログインページへ
       return;
     }
 
     axios
-      .get(`${process.env.REACT_APP_API_SERVER_URL}/api/user/get/${userId}`) // GETエンドポイントを修正
+      .get(`${process.env.REACT_APP_API_SERVER_URL}/api/user/get/${userId}`)
       .then((res) => {
-        const { user_data } = res.data; // レスポンスの構造が { user_data: {...} } に変更されている
+        const { user_data } = res.data;
         setName(user_data.name);
         setEmail(user_data.email);
-        setIconUrl(user_data.icon_name); // icon_name を iconUrl としてセット
+        setIconUrl(user_data.icon_name); // 表示用に設定
       })
       .catch((err) => {
         console.error("ユーザ情報の取得に失敗しました:", err);
         setError("ユーザ情報の取得に失敗しました。");
       })
       .finally(() => setLoading(false));
-  }, [userId, navigate]); // navigate を依存配列に追加
+  }, [userId, navigate]);
 
   // 送信ハンドラ
   const handleSubmit = async ({ name, pw, iconFile }) => {
     try {
       const formData = new FormData();
-      formData.append("user_id", userId); // user_id を FormData に追加
+      formData.append("user_id", userId);
       formData.append("name", name);
-      // パスワードが入力されている場合のみ追加
       if (pw) {
-        formData.append("password", pw); // キーを "password" に修正
+        formData.append("password", pw);
       }
-      // アイコンファイルが選択されている場合のみ追加
       if (iconFile) {
-        formData.append("icon_file", iconFile); // キーを "icon_file" に修正
-      } else if (iconFile === null && iconUrl !== "") {
-        // アイコンをクリアしたい場合など、iconFileがnullで元々アイコンがあった場合
-        // 例えば、UIに「アイコンを削除」ボタンを設け、そのボタンが押されたときに
-        // `setNewIconFile(false)` のような状態をセットして、`data_edit`に伝える。
-        // 現状のUIでは「アイコン画像を選択」しかないので、このケースは発生しないが、
-        // 将来的な拡張のためにコメントとして残しておく。
-        // formData.append("icon_file", ""); // または特別なフラグ
+        formData.append("icon_file", iconFile);
       }
 
-
-      // PUTリクエストのURLとデータの形式を修正
       await axios.put(`${process.env.REACT_APP_API_SERVER_URL}/api/user/edit`, formData, {
         headers: {
-          'Content-Type': 'multipart/form-data', // ファイルを送信するため必要
+          'Content-Type': 'multipart/form-data',
         },
       });
 
-      // 編集完了後に遷移
-      navigate(`/user/${userId}/edit/complete`); // 適切な遷移先に変更してください
+      // 完了ページへ遷移
+      navigate(`/user/${userId}/edit/complete`);
     } catch (err) {
       console.error("ユーザ情報の更新に失敗しました:", err.response ? err.response.data : err);
       setError(err.response?.data?.error || "ユーザ情報の更新に失敗しました");

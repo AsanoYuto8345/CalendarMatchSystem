@@ -1,6 +1,6 @@
 # c3_user_routes.py
 # C3 ユーザ情報処理部のAPIエンドポイントを定義
-# 作成者: [担当者の名前]
+# 作成者:関太生
 
 from flask import Blueprint, request, jsonify
 # C3のビジネスロジックをインポート
