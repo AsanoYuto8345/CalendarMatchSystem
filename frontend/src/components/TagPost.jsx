@@ -29,19 +29,27 @@ const TagPost = ({ tagList = [], date ,onSubmit, onClickClose, title = "テン�
       {/* ラジオボタン付きタグリスト */}
       <div className="space-y-3 mb-6">
         {tagList.map((tag) => (
-          <label key={tag.id} className="flex items-center gap-4 cursor-pointer">
+          <label
+            key={tag.id}
+            className="flex items-center gap-4 cursor-pointer bg-gray-100 p-3 rounded-md"
+          >
             <input
               type="radio"
               name="templateTag"
               value={tag.id}
-              checked={selectedTag.id === tag.id}
+              checked={selectedTag?.id === tag.id}
               onChange={() => setSelectedTag(tag)}
-              className="w-5 h-5 font-semibold text-white"
+              className="w-5 h-5"
             />
             <div
-              className="flex-1 px-3 py-2 rounded border text-gray-800"
-              style={{ backgroundColor: `#${tag.color_code}`,
-                       textShadow: "0 0 1px white" }}
+              className="flex-1 text-lg px-3 py-2 rounded font-semibold truncate"
+              style={{
+                backgroundColor: `#${tag.color_code}`,
+                color: '#fff',
+                // 白文字＋黒縁取りのテキストシャドウ
+                textShadow: '-1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000'
+              }}
+              title={tag.tag}
             >
               {tag.tag}
             </div>
