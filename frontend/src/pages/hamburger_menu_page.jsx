@@ -1,3 +1,6 @@
+// M8 HambergerMenuUI.jsx
+// 担当：石田めぐみ
+
 import SideMenu from '../components/SideMenu'
 
 const HomeLayoutPage = () => {
