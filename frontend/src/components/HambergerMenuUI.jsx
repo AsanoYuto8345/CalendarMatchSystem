@@ -1,4 +1,6 @@
-// HambergerMenuUI.jsx
+// M8 HambergerMenuUI.jsx
+// 担当：石田めぐみ
+
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import Cookies from 'js-cookie';
