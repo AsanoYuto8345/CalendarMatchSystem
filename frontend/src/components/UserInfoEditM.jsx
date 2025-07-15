@@ -1,3 +1,5 @@
+// W20 ユーザ情報編集完了Mに対応するReactコンポーネント 担当: 角田一颯
+
 import { useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 
@@ -7,7 +9,7 @@ const UserInfoEditM = () => {
 
   useEffect(() => {
     timerRef.current = setTimeout(() => {
-      navigate('/');//とりあえず適当に
+      navigate('/');
     }, 3000);
 
     return () => clearTimeout(timerRef.current);

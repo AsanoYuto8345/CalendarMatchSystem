@@ -1,3 +1,5 @@
+// W20 ユーザ情報編集完了M　担当: 角田一颯
+
 import React from 'react';
 import UserInfoEditM from '../components/UserInfoEditM';
 

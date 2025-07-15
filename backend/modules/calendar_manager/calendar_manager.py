@@ -1,4 +1,4 @@
-# C10 カレンダー情報管理部 CalendarManagerクラス  担当: 角田 一颯, 浅野勇翔
+# C10 カレンダー情報管理部 CalendarManagerクラス  担当: 角田一颯, 浅野勇翔
 from extentions import db
 import traceback
 
