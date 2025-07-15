@@ -9,7 +9,8 @@ import TagListViewByDate from '../components/TagListViewByDate';
  * 特定の日付に投稿されたタグと、そのタグを投稿したコミュニティ内のメンバー一覧を表示する。
  *
  *　担当者:関太生
- */
+*/
+
 const CommunityCalendarTagViewPage = () => {
   const { communityId, date } = useParams();
   const navigate = useNavigate();

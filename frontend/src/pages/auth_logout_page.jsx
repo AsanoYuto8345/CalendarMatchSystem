@@ -33,7 +33,7 @@ const AuthLogoutPage = () => {
   };
 
   const onRejectClick = () => {
-    navigate('/calendar');
+    navigate('/');
   };
 
   return (
