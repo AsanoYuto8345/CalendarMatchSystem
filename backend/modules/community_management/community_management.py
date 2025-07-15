@@ -1,6 +1,8 @@
 """
 C9 コミュニティ情報管理部
-このモジュールは SQLite データベースを用いてコミュニティ情報・テンプレートタグ・チャットデータを永続的に管理します。
+このモジュールは SQLite データベースを用いて
+コミュニティ情報・テンプレートタグ・チャットデータを永続的に管理します。
+作成者: 遠藤信輝
 """
 
 import logging
@@ -13,22 +15,33 @@ import uuid
 
 logger = logging.getLogger(__name__)
 
+# DBパスを定義（相対パス指定）
 DB_PATH = os.path.join(os.path.dirname(__file__), "../../instance/messages.db")
 
 def get_db():
+    """
+    SQLiteデータベース接続取得
+    Returns:
+        sqlite3.Connection: DB接続オブジェクト
+    """
     if 'db' not in g:
         g.db = sqlite3.connect(DB_PATH)
         g.db.row_factory = sqlite3.Row
     return g.db
 
 def close_db(e=None):
+    """
+    Flaskアプリケーション終了時のDBクローズ処理
+    """
     db = g.pop('db', None)
     if db is not None:
         db.close()
 
 def init_db():
+    """
+    DB初期化関数: テーブルが存在しない場合は作成
+    """
     db = sqlite3.connect(DB_PATH)
-    # communities: UUID文字列を主キーとする
     db.execute("""
         CREATE TABLE IF NOT EXISTS communities (
             id TEXT PRIMARY KEY,
@@ -36,19 +49,16 @@ def init_db():
             image_path TEXT
         )
     """)
-    # template_tags: UUID文字列を主キーとし、community_idもTEXT
     db.execute("""
         CREATE TABLE IF NOT EXISTS template_tags (
             id TEXT PRIMARY KEY,
             community_id TEXT NOT NULL,
             tag TEXT NOT NULL,
             color_code TEXT NOT NULL,
-            FOREIGN KEY (community_id) REFERENCES communities(id)
-            
+            FOREIGN KEY (community_id) REFERENCES communities(id),
             UNIQUE (community_id, tag)
         )
     """)
-      # members テーブル（モデルに合わせて id を主キーにした文字列型）
     db.execute("""
         CREATE TABLE IF NOT EXISTS members (
             id TEXT PRIMARY KEY,
@@ -57,7 +67,6 @@ def init_db():
             FOREIGN KEY (community_id) REFERENCES communities(id)
         )
     """)
-    # chat_messages: UUID文字列を主キー、community_id/tag_idはTEXT
     db.execute("""
         CREATE TABLE IF NOT EXISTS chat_messages (
             id TEXT PRIMARY KEY,
@@ -69,7 +78,7 @@ def init_db():
             message_content TEXT NOT NULL,
             timestamp TEXT NOT NULL,
             FOREIGN KEY (community_id) REFERENCES communities(id),
-            FOREIGN KEY (tag_id)       REFERENCES template_tags(id)
+            FOREIGN KEY (tag_id) REFERENCES template_tags(id)
         )
     """)
     db.commit()
@@ -79,14 +88,21 @@ init_db()
 
 class CommunityManagement:
     """
-    M1: コミュニティ情報主処理
-    ユーザIDをもとに所属コミュニティとテンプレートタグ情報を検索・返却する。
+    コミュニティ情報管理クラス（C9）
+    コミュニティ・テンプレートタグ・チャット履歴等の情報を管理する
     """
 
     def get_communities_and_tags_by_user(self, user_id):
+        """
+        指定ユーザが所属するコミュニティと、そのテンプレートタグ一覧を取得
+        Args:
+            user_id (str): ユーザID
+        Returns:
+            JSONレスポンス
+        """
         user_id = user_id.strip()
         if not user_id:
-            return jsonify({"error": "ユーザIDが未指定です"}), 400  # E1
+            return jsonify({"error": "ユーザIDが未指定です"}), 400
 
         db = get_db()
         rows = db.execute("""
@@ -114,13 +130,20 @@ class CommunityManagement:
         return jsonify({"result": True, "communities": result}), 200
 
     def register(self, name, image=None):
+        """
+        新規コミュニティ登録処理
+        Args:
+            name (str): コミュニティ名
+            image (str, optional): アイコン画像（未使用）
+        Returns:
+            JSONレスポンス
+        """
         if not name:
             return jsonify({"error": "コミュニティ名が未入力です"}), 400
         if len(name) > 16:
             return jsonify({"error": "16文字以内にしてください"}), 400
 
         db = get_db()
-        # UUID を生成して INSERT
         community_id = uuid.uuid4().hex
         try:
             db.execute(
@@ -140,7 +163,9 @@ class CommunityManagement:
         }), 201
 
     def get_community_info(self, community_id):
-
+        """
+        指定コミュニティIDに対応する詳細情報（タグ含む）を返す
+        """
         if not community_id:
             return jsonify({"error": "コミュニティIDが未指定または不正です"}), 400
 
@@ -167,6 +192,12 @@ class CommunityManagement:
         }), 200
 
     def updatecommunityInfo(self):
+        """
+        コミュニティに紐づくテンプレートタグの更新処理
+        リクエストで受け取ったタグ一覧と現在のタグを比較し、追加・更新・削除を行う
+        Returns:
+            JSONレスポンス
+        """
         data = request.get_json() or {}
         community_id = data.get("community_id", "").strip()
         tags = data.get("tags", [])
@@ -199,7 +230,7 @@ class CommunityManagement:
             if len(tag_name) > 20:
                 return jsonify({"error": "タグは20文字以内にしてください"}), 400
             if not re.fullmatch(r"^#[0-9a-fA-F]{6}$", color_code):
-                color_code = "000000"
+                color_code = "#000000"
 
             if tag_id and tag_id in current_tags:
                 if current_tags[tag_id] != tag_name:
@@ -235,6 +266,15 @@ class CommunityManagement:
         }), 200
 
     def post_chat(self, community_id, tag_id, data):
+        """
+        チャットメッセージの保存処理
+        Args:
+            community_id (str): コミュニティID
+            tag_id (str): テンプレートタグID
+            data (dict): {date, message, sender_id}
+        Returns:
+            JSONレスポンス
+        """
         date = data.get("date", "").strip()
         message = data.get("message", "").strip()
         sender_id = data.get("sender_id", "").strip()
@@ -246,12 +286,11 @@ class CommunityManagement:
         timestamp = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         try:
             new_id = uuid.uuid4().hex
-            db.execute(
-                """
+            db.execute("""
                 INSERT INTO chat_messages
                   (id, community_id, tag_id, date, sender_id, message_content, timestamp)
                 VALUES (?, ?, ?, ?, ?, ?, ?)
-                """,
+            """,
                 (new_id, community_id, tag_id, date, sender_id, message, timestamp)
             )
             db.commit()
@@ -268,18 +307,22 @@ class CommunityManagement:
         return jsonify({"post_status": True, "new_message": new_message}), 201
 
     def get_chat_history(self, community_id, tag_id, date):
+        """
+        指定されたタグ・日付・コミュニティに紐づくチャット履歴の取得
+        Returns:
+            JSONレスポンス
+        """
         if not all([community_id, tag_id, date]):
             return jsonify({"error": "不正な入力です"}), 400
 
         db = get_db()
         try:
-            rows = db.execute(
-                """
+            rows = db.execute("""
                 SELECT sender_id, message_content, timestamp
                 FROM chat_messages
                 WHERE community_id = ? AND tag_id = ? AND date = ?
                 ORDER BY timestamp ASC
-                """,
+            """,
                 (community_id, tag_id, date)
             ).fetchall()
         except Exception as e:
@@ -298,6 +341,11 @@ class CommunityManagement:
         return jsonify({"chat_history": chat_history}), 200
 
     def get_community_members(self, community_id):
+        """
+        指定されたコミュニティに所属するメンバー一覧を取得
+        Returns:
+            JSONレスポンス
+        """
         if not community_id:
             return jsonify({"error": "無効なコミュニティIDです"}), 400
 
@@ -314,27 +362,33 @@ class CommunityManagement:
         ).fetchall()
 
         member_list = [row["user_id"] for row in members]
-
         return jsonify({"result": True, "members": member_list}), 200
 
     def get_template_tag_info_by_id(self, template_tag_id):
+        """
+        テンプレートタグIDをもとに詳細情報を取得
+        Args:
+            template_tag_id (str): テンプレートタグのID
+        Returns:
+            JSONレスポンス
+        """
         if not template_tag_id:
             return jsonify({"error": "テンプレートタグIDが未入力です"})
-        
+
         db = get_db()
         template_tag = db.execute(
             "SELECT id, tag, color_code, community_id FROM template_tags WHERE id = ?",
             (template_tag_id,)
         ).fetchone()
-        
+
         if not template_tag:
             return jsonify({"error": f"ID {template_tag_id} のテンプレートタグは存在しません"}), 404
-        
+
         template_tag = {
             "id": template_tag["id"],
             "tag": template_tag["tag"],
             "color_code": template_tag["color_code"],
             "community_id": template_tag["community_id"]
         }
-        
+
         return jsonify({"result": True, "template_tag": template_tag})
