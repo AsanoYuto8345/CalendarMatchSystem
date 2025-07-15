@@ -8,7 +8,7 @@ import TagListViewByDate from '../components/TagListViewByDate';
  * M22 日付ごとのタグ一覧画面
  * 特定の日付に投稿されたタグと、そのタグを投稿したコミュニティ内のメンバー一覧を表示する。
  *
- * 作成者: (TBD)
+ *　担当者:関太生
  */
 const CommunityCalendarTagViewPage = () => {
   const { communityId, date } = useParams();
