@@ -1,4 +1,4 @@
-# C10 カレンダー情報管理部ルーティング  担当: 角田 一颯 浅野勇翔
+# C10 カレンダー情報管理部ルーティング  担当: 角田一颯 浅野勇翔
 
 from flask import Blueprint, request, jsonify
 

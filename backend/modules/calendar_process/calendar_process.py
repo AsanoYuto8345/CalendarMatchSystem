@@ -1,4 +1,4 @@
-# C5 カレンダー情報処理部 CalenderProcessクラス 担当: 角田 一颯
+# C5 カレンダー情報処理部 CalenderProcessクラス 担当: 角田一颯
 
 import requests
 import uuid
