@@ -6,7 +6,7 @@ import Cookies from 'js-cookie';
 /**
  * M23 タグチャット画面
  * 10秒ごとにチャット履歴を自動更新し、読み込み中インジケータをヘッダーに移動
- * 作成者:関太生
+ * 担当者:関太生
  */
 const CommunityTagChatPage = () => {
   const { communityId, tagId } = useParams();

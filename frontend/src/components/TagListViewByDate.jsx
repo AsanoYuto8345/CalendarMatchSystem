@@ -13,7 +13,7 @@ import { Link } from 'react-router-dom';
  * @param {Function} props.onCloseClick - 閉じるボタンクリック時のハンドラ
  * @param {string} props.message - 表示メッセージ
  *
- * 作成者: (TBD)
+ * 担当者:関太生
  */
 const TagListViewByDate = ({ date, tagList, memberList, onTagClick, onEditClick, onAddTagClick, onCloseClick, message }) => {
   console.log(tagList);

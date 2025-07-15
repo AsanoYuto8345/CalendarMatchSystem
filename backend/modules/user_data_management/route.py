@@ -1,6 +1,6 @@
 # modules/users/route.py
 # C8 ユーザ情報管理部のAPIエンドポイントを定義
-# 作成者: [担当者の名前]
+# 担当者:関太生
 
 from flask import Blueprint, request, jsonify
 from .user_data_management import UserDataManagement
