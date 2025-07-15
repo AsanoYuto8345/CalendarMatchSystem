@@ -1,13 +1,14 @@
 // M11 カレンダー画面 担当者: 角田一颯
 
 import { useEffect, useState } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useNavigate, useParams, useLocation } from 'react-router-dom';
 import axios from 'axios';
 import CalendarView from '../components/CalendarView';
 import dayjs from 'dayjs';
 
 const CommunityCalendarViewPage = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const { communityId } = useParams();
   const [events, setEvents] = useState([]);
   const [year, setYear] = useState(dayjs().year());
@@ -93,7 +94,7 @@ const CommunityCalendarViewPage = () => {
     };
 
     fetchTagsForMonth();
-  }, [year, month, communityId]);
+  }, [year, month, communityId, location]);
 
   if (loading) return <div className="p-4">読み込み中...</div>;
   if (error) return <div className="p-4 text-red-500">{error}</div>;

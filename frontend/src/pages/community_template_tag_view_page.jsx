@@ -15,7 +15,7 @@ const TemplateTagViewPage = () => {
   // テンプレートタグ一覧を保持する state
   const [templateTags, setTemplateTags] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [deleteCount, setDeleteCount] = useState(true);
+  const [deleteCount, setDeleteCount] = useState(0);
   const [error, setError] = useState("");
 
   const onClickEdit = (tagId) => {
@@ -38,7 +38,7 @@ const TemplateTagViewPage = () => {
         }
       )
       .then((res) => {
-        setDeleteCount(setDeleteCount + 1);
+        setDeleteCount(deleteCount + 1);
       })
       .catch((err) => {
         console.error(err);
@@ -55,7 +55,6 @@ const TemplateTagViewPage = () => {
     axios
       .get(`${process.env.REACT_APP_API_SERVER_URL}/api/community/template_tags?community_id=${communityId}`)
       .then((res) => {
-        console.log(res.data.tags);
         setTemplateTags(res.data.tags || []);
       })
       .catch((err) => {
@@ -72,6 +71,8 @@ const TemplateTagViewPage = () => {
 
   // エラー発生時
   if (error) return <div className="p-4 text-red-500">{error}</div>;
+
+  console.log(deleteCount);
 
   return <TemplateTagView tags={templateTags} onClickEdit={onClickEdit} onClickCreate={onClickCreate} onClickDelete={onClickDelete} />;
 };
